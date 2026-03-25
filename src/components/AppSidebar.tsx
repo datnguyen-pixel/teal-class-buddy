@@ -4,7 +4,7 @@ import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap }
 import { cn } from '@/lib/utils';
 
 const AppSidebar = () => {
-  const { user, logout, isTeacher } = useAuth();
+  const { user, signOut, isTeacher } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,7 +17,6 @@ const AppSidebar = () => {
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 gradient-hero flex flex-col z-50">
-      {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
@@ -30,7 +29,6 @@ const AppSidebar = () => {
         </div>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
@@ -52,19 +50,22 @@ const AppSidebar = () => {
         })}
       </nav>
 
-      {/* User */}
       <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
-            {user?.name?.charAt(0) || 'U'}
-          </div>
+          {user?.avatarUrl ? (
+            <img src={user.avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover" />
+          ) : (
+            <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-sm font-bold">
+              {user?.fullName?.charAt(0) || 'U'}
+            </div>
+          )}
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.name}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">{user?.fullName}</p>
             <p className="text-xs text-sidebar-foreground/60 capitalize">{user?.role}</p>
           </div>
         </div>
         <button
-          onClick={() => { logout(); navigate('/'); }}
+          onClick={async () => { await signOut(); navigate('/'); }}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all"
         >
           <LogOut className="w-4 h-4" />

@@ -12,8 +12,15 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const { login, loginAsStudent } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+  const { signInWithEmail, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already logged in
+  if (user) {
+    navigate('/dashboard', { replace: true });
+    return null;
+  }
 
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,14 +29,20 @@ const Login = () => {
       setError('Please fill in all fields');
       return;
     }
-    const success = await login(email, password);
-    if (success) navigate('/dashboard');
-    else setError('Invalid credentials');
+    setIsLoading(true);
+    const result = await signInWithEmail(email, password);
+    setIsLoading(false);
+    if (result.error) {
+      setError(result.error);
+    } else {
+      navigate('/dashboard');
+    }
   };
 
-  const handleGoogleLogin = () => {
-    loginAsStudent();
-    navigate('/dashboard');
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    await signInWithGoogle();
+    setIsLoading(false);
   };
 
   return (
@@ -40,7 +53,6 @@ const Login = () => {
         transition={{ duration: 0.5 }}
         className="w-full max-w-md"
       >
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-4">
             <GraduationCap className="w-9 h-9 text-primary-foreground" />
@@ -55,11 +67,11 @@ const Login = () => {
             <CardDescription>Choose your login method</CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Google Sign-In for Students */}
             <Button
               variant="outline"
               className="w-full h-12 text-base gap-3"
               onClick={handleGoogleLogin}
+              disabled={isLoading}
             >
               <Chrome className="w-5 h-5" />
               Sign in with Google
@@ -74,7 +86,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Teacher Email/Password */}
             <form onSubmit={handleTeacherLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -105,8 +116,8 @@ const Login = () => {
                 </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full h-11 text-base gradient-primary border-0">
-                Sign In as Teacher
+              <Button type="submit" className="w-full h-11 text-base gradient-primary border-0" disabled={isLoading}>
+                {isLoading ? 'Signing in...' : 'Sign In as Teacher'}
               </Button>
             </form>
           </CardContent>
