@@ -46,29 +46,35 @@ export type Database = {
       }
       lessons: {
         Row: {
+          attachments: Json | null
           content: string | null
           google_docs_link: string | null
           id: number
           is_edited: boolean
           pdf_url: string | null
+          thumbnail_url: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          attachments?: Json | null
           content?: string | null
           google_docs_link?: string | null
           id: number
           is_edited?: boolean
           pdf_url?: string | null
+          thumbnail_url?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          attachments?: Json | null
           content?: string | null
           google_docs_link?: string | null
           id?: number
           is_edited?: boolean
           pdf_url?: string | null
+          thumbnail_url?: string | null
           title?: string
           updated_at?: string
         }
