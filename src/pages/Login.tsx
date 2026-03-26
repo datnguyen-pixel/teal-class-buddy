@@ -123,7 +123,7 @@ const Login = () => {
         </Card>
 
         <p className="text-center text-primary-foreground/40 text-xs mt-6">
-          Designed for small English classes • Max 15 students
+          Together We Move On
         </p>
       </motion.div>
     </div>
