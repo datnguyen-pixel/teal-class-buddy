@@ -68,8 +68,7 @@ const Login = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <Button
-              variant="outline"
-              className="w-full h-12 text-base gap-3"
+              className="w-full h-12 text-base gap-3 text-primary-foreground bg-[#239a8e] border-0 hover:bg-[#239a8e]/90"
               onClick={handleGoogleLogin}
               disabled={isLoading}
             >
@@ -94,7 +93,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="teacher@school.com"
+                    placeholder="teacher@gmail.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="pl-10 h-11"
@@ -124,7 +123,7 @@ const Login = () => {
         </Card>
 
         <p className="text-center text-primary-foreground/40 text-xs mt-6">
-          Designed for small English classes • Max 15 students
+          Together We Move On
         </p>
       </motion.div>
     </div>
