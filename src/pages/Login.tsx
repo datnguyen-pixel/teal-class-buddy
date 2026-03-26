@@ -68,8 +68,7 @@ const Login = () => {
           </CardHeader>
           <CardContent className="space-y-6">
             <Button
-              variant="outline"
-              className="w-full h-12 text-base gap-3"
+              className="w-full h-12 text-base gap-3 text-primary-foreground bg-[#239a8e] border-0 hover:bg-[#239a8e]/90"
               onClick={handleGoogleLogin}
               disabled={isLoading}
             >
