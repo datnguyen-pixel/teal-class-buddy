@@ -93,7 +93,7 @@ const Login = () => {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="teacher@school.com"
+                    placeholder="teacher@gmail.com"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
                     className="pl-10 h-11"
