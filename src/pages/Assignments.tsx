@@ -1,27 +1,32 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Calendar, FileText, MessageSquare, Trash2 } from 'lucide-react';
+import { Calendar, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import CreateAssignmentDialog from '@/components/assignments/CreateAssignmentDialog';
+import GradeRow from '@/components/assignments/GradeRow';
+import VoiceRecorder from '@/components/assignments/VoiceRecorder';
+
+const TYPE_BADGES: Record<string, { label: string; icon: React.ElementType; className: string }> = {
+  essay: { label: 'Essay', icon: PenLine, className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' },
+  multiple_choice: { label: 'Multiple Choice', icon: CheckCircle2, className: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300' },
+  speaking: { label: 'Speaking', icon: Mic, className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300' },
+};
 
 const Assignments = () => {
   const { user, isTeacher } = useAuth();
   const queryClient = useQueryClient();
-  const [newTitle, setNewTitle] = useState('');
-  const [newDesc, setNewDesc] = useState('');
-  const [newDue, setNewDue] = useState('');
-  const [open, setOpen] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
   const [submitDialogId, setSubmitDialogId] = useState<string | null>(null);
+  const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
+  const audioBlobRef = useRef<Blob | null>(null);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments'],
@@ -39,7 +44,6 @@ const Assignments = () => {
     },
   });
 
-  // Fetch profiles for student names
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles'],
     queryFn: async () => {
@@ -47,24 +51,6 @@ const Assignments = () => {
       return data || [];
     },
     enabled: isTeacher,
-  });
-
-  const createMutation = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from('assignments').insert({
-        title: newTitle,
-        description: newDesc,
-        due_date: newDue,
-        created_by: user!.id,
-      });
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      setNewTitle(''); setNewDesc(''); setNewDue(''); setOpen(false);
-      toast.success('Assignment created!');
-    },
-    onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
@@ -78,7 +64,8 @@ const Assignments = () => {
     },
   });
 
-  const submitMutation = useMutation({
+  // Essay submission
+  const submitEssayMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
       const { error } = await supabase.from('submissions').insert({
         assignment_id: assignmentId,
@@ -95,6 +82,53 @@ const Assignments = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // MC submission with auto-grading
+  const submitMcMutation = useMutation({
+    mutationFn: async ({ assignmentId, answer, correctAnswer }: { assignmentId: string; answer: string; correctAnswer: string }) => {
+      const isCorrect = answer === correctAnswer;
+      const { error } = await supabase.from('submissions').insert({
+        assignment_id: assignmentId,
+        student_id: user!.id,
+        content: answer,
+        grade: isCorrect ? 100 : 0,
+        feedback: isCorrect ? 'Correct!' : `Incorrect. The correct answer is: ${correctAnswer}`,
+        graded_at: new Date().toISOString(),
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      setSelectedMcAnswer(''); setSubmitDialogId(null);
+      toast.success('Answer submitted and graded!');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  // Speaking submission
+  const submitSpeakingMutation = useMutation({
+    mutationFn: async (assignmentId: string) => {
+      const blob = audioBlobRef.current;
+      if (!blob) throw new Error('No recording found');
+      const filePath = `${user!.id}/${assignmentId}/${Date.now()}.webm`;
+      const { error: uploadErr } = await supabase.storage.from('submissions').upload(filePath, blob, { contentType: 'audio/webm' });
+      if (uploadErr) throw uploadErr;
+      const { error } = await supabase.from('submissions').insert({
+        assignment_id: assignmentId,
+        student_id: user!.id,
+        content: 'Voice recording submitted',
+        file_url: filePath,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['submissions'] });
+      audioBlobRef.current = null;
+      setSubmitDialogId(null);
+      toast.success('Recording submitted!');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const gradeMutation = useMutation({
     mutationFn: async ({ id, grade, feedback }: { id: string; grade: number; feedback: string }) => {
       const { error } = await supabase.from('submissions').update({ grade, feedback, graded_at: new Date().toISOString() }).eq('id', id);
@@ -106,10 +140,9 @@ const Assignments = () => {
     },
   });
 
-  const handleCreate = () => {
-    if (!newTitle || !newDue) { toast.error('Title and due date are required'); return; }
-    createMutation.mutate();
-  };
+  const handleRecordingComplete = useCallback((blob: Blob) => {
+    audioBlobRef.current = blob;
+  }, []);
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
   const item = { hidden: { opacity: 0, y: 10 }, show: { opacity: 1, y: 0 } };
@@ -124,39 +157,16 @@ const Assignments = () => {
               {isTeacher ? 'Create and manage class assignments' : 'View and submit assignments'}
             </p>
           </div>
-          {isTeacher && (
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="gradient-primary border-0 gap-2"><Plus className="w-4 h-4" /> New Assignment</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Create Assignment</DialogTitle></DialogHeader>
-                <div className="space-y-4 mt-4">
-                  <div className="space-y-2">
-                    <Label>Title</Label>
-                    <Input value={newTitle} onChange={e => setNewTitle(e.target.value)} placeholder="Assignment title" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <Textarea value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Instructions..." rows={3} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Due Date</Label>
-                    <Input type="date" value={newDue} onChange={e => setNewDue(e.target.value)} />
-                  </div>
-                  <Button onClick={handleCreate} className="w-full gradient-primary border-0" disabled={createMutation.isPending}>
-                    {createMutation.isPending ? 'Creating...' : 'Create Assignment'}
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
+          {isTeacher && <CreateAssignmentDialog userId={user!.id} />}
         </motion.div>
 
         <div className="grid gap-4">
-          {assignments.map(assignment => {
+          {assignments.map((assignment: any) => {
+            const assignmentType = assignment.type || 'essay';
             const assignmentSubs = submissions.filter(s => s.assignment_id === assignment.id);
             const mySubmission = assignmentSubs.find(s => s.student_id === user?.id);
+            const badge = TYPE_BADGES[assignmentType] || TYPE_BADGES.essay;
+            const BadgeIcon = badge.icon;
 
             return (
               <motion.div key={assignment.id} variants={item}>
@@ -164,7 +174,12 @@ const Assignments = () => {
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{assignment.title}</h3>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-semibold text-lg">{assignment.title}</h3>
+                          <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${badge.className}`}>
+                            <BadgeIcon className="w-3 h-3" /> {badge.label}
+                          </span>
+                        </div>
                         <p className="text-sm text-muted-foreground mt-1">{assignment.description}</p>
                         <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -178,8 +193,12 @@ const Assignments = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 ml-4">
+                        {/* Student submit button */}
                         {!isTeacher && !mySubmission && (
-                          <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => setSubmitDialogId(o ? assignment.id : null)}>
+                          <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {
+                            setSubmitDialogId(o ? assignment.id : null);
+                            if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; }
+                          }}>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" className="gap-1.5">
                                 <MessageSquare className="w-3.5 h-3.5" /> Submit
@@ -189,19 +208,80 @@ const Assignments = () => {
                               <DialogHeader><DialogTitle>Submit Answer</DialogTitle></DialogHeader>
                               <div className="space-y-4 mt-4">
                                 <p className="text-sm text-muted-foreground">{assignment.title}</p>
-                                <Textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)} placeholder="Type your answer..." rows={5} />
-                                <Button onClick={() => submitMutation.mutate(assignment.id)} className="w-full gradient-primary border-0" disabled={submitMutation.isPending}>
-                                  Submit Answer
-                                </Button>
+
+                                {/* Essay submission */}
+                                {assignmentType === 'essay' && (
+                                  <>
+                                    <Textarea value={submissionText} onChange={e => setSubmissionText(e.target.value)} placeholder="Type your answer..." rows={5} />
+                                    <Button onClick={() => submitEssayMutation.mutate(assignment.id)} className="w-full gradient-primary border-0" disabled={submitEssayMutation.isPending}>
+                                      {submitEssayMutation.isPending ? 'Submitting...' : 'Submit Answer'}
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Multiple choice submission */}
+                                {assignmentType === 'multiple_choice' && (
+                                  <>
+                                    <p className="text-sm font-medium">{assignment.description}</p>
+                                    <div className="space-y-2">
+                                      {(assignment.options as string[] || []).map((opt: string, i: number) => (
+                                        <label key={i} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${selectedMcAnswer === opt ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'}`}>
+                                          <input
+                                            type="radio"
+                                            name={`mc-${assignment.id}`}
+                                            value={opt}
+                                            checked={selectedMcAnswer === opt}
+                                            onChange={() => setSelectedMcAnswer(opt)}
+                                            className="accent-primary"
+                                          />
+                                          <span className="text-sm">{opt}</span>
+                                        </label>
+                                      ))}
+                                    </div>
+                                    <Button
+                                      onClick={() => submitMcMutation.mutate({ assignmentId: assignment.id, answer: selectedMcAnswer, correctAnswer: assignment.correct_answer || '' })}
+                                      className="w-full gradient-primary border-0"
+                                      disabled={!selectedMcAnswer || submitMcMutation.isPending}
+                                    >
+                                      {submitMcMutation.isPending ? 'Submitting...' : 'Submit Answer'}
+                                    </Button>
+                                  </>
+                                )}
+
+                                {/* Speaking submission */}
+                                {assignmentType === 'speaking' && (
+                                  <>
+                                    <div className="p-4 rounded-lg bg-muted/50 border">
+                                      <p className="text-xs font-medium text-muted-foreground mb-1">Read this passage aloud:</p>
+                                      <p className="text-sm leading-relaxed">{assignment.description}</p>
+                                    </div>
+                                    <VoiceRecorder onRecordingComplete={handleRecordingComplete} />
+                                    <Button
+                                      onClick={() => submitSpeakingMutation.mutate(assignment.id)}
+                                      className="w-full gradient-primary border-0"
+                                      disabled={!audioBlobRef.current || submitSpeakingMutation.isPending}
+                                    >
+                                      {submitSpeakingMutation.isPending ? 'Uploading...' : 'Submit Recording'}
+                                    </Button>
+                                  </>
+                                )}
                               </div>
                             </DialogContent>
                           </Dialog>
                         )}
+
+                        {/* Student result badge */}
                         {!isTeacher && mySubmission && (
                           <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-secondary-foreground">
                             {mySubmission.grade !== null ? `${mySubmission.grade}/100` : 'Submitted ✓'}
                           </span>
                         )}
+                        {!isTeacher && mySubmission && mySubmission.feedback && (
+                          <span className="text-xs text-muted-foreground max-w-[200px] truncate" title={mySubmission.feedback}>
+                            {mySubmission.feedback}
+                          </span>
+                        )}
+
                         {isTeacher && (
                           <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(assignment.id)} className="text-destructive hover:text-destructive">
                             <Trash2 className="w-4 h-4" />
@@ -210,13 +290,20 @@ const Assignments = () => {
                       </div>
                     </div>
 
+                    {/* Teacher submissions view */}
                     {isTeacher && assignmentSubs.length > 0 && (
                       <div className="mt-4 pt-4 border-t space-y-2">
                         <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Submissions</p>
                         {assignmentSubs.map(sub => {
                           const studentProfile = profiles.find(p => p.user_id === sub.student_id);
                           return (
-                            <GradeRow key={sub.id} sub={sub} studentName={studentProfile?.full_name || 'Student'} onGrade={gradeMutation.mutate} />
+                            <GradeRow
+                              key={sub.id}
+                              sub={sub}
+                              studentName={studentProfile?.full_name || 'Student'}
+                              assignmentType={assignmentType}
+                              onGrade={gradeMutation.mutate}
+                            />
                           );
                         })}
                       </div>
@@ -232,45 +319,6 @@ const Assignments = () => {
         </div>
       </motion.div>
     </AppLayout>
-  );
-};
-
-const GradeRow = ({ sub, studentName, onGrade }: { sub: any; studentName: string; onGrade: (args: { id: string; grade: number; feedback: string }) => void }) => {
-  const [gradeVal, setGradeVal] = useState(sub.grade?.toString() || '');
-  const [feedbackVal, setFeedbackVal] = useState(sub.feedback || '');
-  const [editing, setEditing] = useState(false);
-
-  return (
-    <div className="p-3 rounded-lg bg-muted/50 text-sm space-y-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="font-medium">{studentName}</span>
-          <span className="text-muted-foreground ml-2">• {new Date(sub.submitted_at).toLocaleDateString()}</span>
-        </div>
-        {sub.grade !== null ? (
-          <span className="text-sm font-semibold text-primary">{sub.grade}/100</span>
-        ) : (
-          <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>Grade</Button>
-        )}
-      </div>
-      <p className="text-xs text-muted-foreground">{sub.content}</p>
-      {editing && (
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <Input placeholder="Grade (0-100)" value={gradeVal} onChange={e => setGradeVal(e.target.value)} type="number" min={0} max={100} />
-          </div>
-          <div className="flex-1 space-y-1">
-            <Input placeholder="Feedback" value={feedbackVal} onChange={e => setFeedbackVal(e.target.value)} />
-          </div>
-          <Button size="sm" onClick={() => {
-            const g = parseInt(gradeVal);
-            if (isNaN(g) || g < 0 || g > 100) return;
-            onGrade({ id: sub.id, grade: g, feedback: feedbackVal });
-            setEditing(false);
-          }}>Save</Button>
-        </div>
-      )}
-    </div>
   );
 };
 
