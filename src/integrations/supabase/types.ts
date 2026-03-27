@@ -16,30 +16,39 @@ export type Database = {
     Tables: {
       assignments: {
         Row: {
+          correct_answer: string | null
           created_at: string
           created_by: string
           description: string
           due_date: string
           id: string
+          options: Json | null
           title: string
+          type: string
           updated_at: string
         }
         Insert: {
+          correct_answer?: string | null
           created_at?: string
           created_by: string
           description?: string
           due_date: string
           id?: string
+          options?: Json | null
           title: string
+          type?: string
           updated_at?: string
         }
         Update: {
+          correct_answer?: string | null
           created_at?: string
           created_by?: string
           description?: string
           due_date?: string
           id?: string
+          options?: Json | null
           title?: string
+          type?: string
           updated_at?: string
         }
         Relationships: []
