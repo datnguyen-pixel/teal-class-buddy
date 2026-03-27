@@ -45,6 +45,7 @@ const Dashboard = () => {
     { icon: BookOpen, label: 'Lessons Taught', value: lessons.length, color: 'text-info' },
     { icon: Users, label: 'Students', value: '\n', color: 'text-success' },
     { icon: TrendingUp, label: 'Avg. Grade', value: avgGrade ? `${avgGrade}%` : 'N/A', color: 'text-warning' },
+    { icon: TrendingUp, label: 'Avg. Grade', value: avgGrade ? `${avgGrade}%` : 'N/A', color: 'text-warning' },
   ];
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.08 } } };
