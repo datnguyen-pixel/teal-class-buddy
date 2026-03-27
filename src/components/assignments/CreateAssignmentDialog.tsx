@@ -17,9 +17,9 @@ interface CreateAssignmentDialogProps {
 }
 
 const TYPE_LABELS: Record<AssignmentType, string> = {
-  essay: 'Tự luận (Essay)',
-  multiple_choice: 'Trắc nghiệm (Multiple Choice)',
-  speaking: 'Giọng nói (Speaking)',
+  essay: 'Essay',
+  multiple_choice: 'Multiple Choice',
+  speaking: 'Speaking',
 };
 
 const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
