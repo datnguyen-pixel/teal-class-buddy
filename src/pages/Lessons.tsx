@@ -150,7 +150,7 @@ const Lessons = () => {
   };
 
   const getAttachments = (lesson: any): Attachment[] => {
-    if (!lesson.attachments || !Array.isArray(lesson.attachments)) return [];
+    if (!lesson || !lesson.attachments || !Array.isArray(lesson.attachments)) return [];
     return lesson.attachments;
   };
 
