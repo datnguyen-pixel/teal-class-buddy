@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Play, Trash2, Clock, Image as ImageIcon } from 'lucide-react';
+import { Plus, Play, Trash2, Clock, Image as ImageIcon, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,12 +24,19 @@ const VocabGameList = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Get item counts
-      const { data: items } = await supabase.from('vocab_items').select('game_id');
-      const counts: Record<string, number> = {};
-      items?.forEach(i => { counts[i.game_id] = (counts[i.game_id] || 0) + 1; });
+      // Get all items for counts and edit data
+      const { data: allItems } = await supabase.from('vocab_items').select('*').order('sort_order');
+      const itemsByGame: Record<string, typeof allItems> = {};
+      allItems?.forEach(i => {
+        if (!itemsByGame[i.game_id]) itemsByGame[i.game_id] = [];
+        itemsByGame[i.game_id]!.push(i);
+      });
 
-      return (gamesData || []).map(g => ({ ...g, itemCount: counts[g.id] || 0 }));
+      return (gamesData || []).map(g => ({
+        ...g,
+        itemCount: itemsByGame[g.id]?.length || 0,
+        items: itemsByGame[g.id] || [],
+      }));
     },
   });
 
@@ -76,9 +83,15 @@ const VocabGameList = () => {
                       </Button>
                     )}
                     {isTeacher && (
-                      <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(game.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <>
+                        <CreateVocabGameDialog
+                          editGame={{ id: game.id, title: game.title, time_per_question: game.time_per_question, items: game.items }}
+                          trigger={<Button size="sm" variant="outline"><Pencil className="w-4 h-4" /></Button>}
+                        />
+                        <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(game.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardContent>
