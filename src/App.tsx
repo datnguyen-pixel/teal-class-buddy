@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Assignments from "./pages/Assignments";
 import Lessons from "./pages/Lessons";
 import Profile from "./pages/Profile";
+import BrainGym from "./pages/BrainGym";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
