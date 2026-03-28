@@ -24,12 +24,19 @@ const VocabGameList = () => {
         .order('created_at', { ascending: false });
       if (error) throw error;
 
-      // Get item counts
-      const { data: items } = await supabase.from('vocab_items').select('game_id');
-      const counts: Record<string, number> = {};
-      items?.forEach(i => { counts[i.game_id] = (counts[i.game_id] || 0) + 1; });
+      // Get all items for counts and edit data
+      const { data: allItems } = await supabase.from('vocab_items').select('*').order('sort_order');
+      const itemsByGame: Record<string, typeof allItems> = {};
+      allItems?.forEach(i => {
+        if (!itemsByGame[i.game_id]) itemsByGame[i.game_id] = [];
+        itemsByGame[i.game_id]!.push(i);
+      });
 
-      return (gamesData || []).map(g => ({ ...g, itemCount: counts[g.id] || 0 }));
+      return (gamesData || []).map(g => ({
+        ...g,
+        itemCount: itemsByGame[g.id]?.length || 0,
+        items: itemsByGame[g.id] || [],
+      }));
     },
   });
 
