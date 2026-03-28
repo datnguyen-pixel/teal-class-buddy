@@ -9,6 +9,7 @@ import Dashboard from "./pages/Dashboard";
 import Assignments from "./pages/Assignments";
 import Lessons from "./pages/Lessons";
 import Profile from "./pages/Profile";
+import BrainGym from "./pages/BrainGym";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/assignments" element={<ProtectedRoute><Assignments /></ProtectedRoute>} />
             <Route path="/lessons" element={<ProtectedRoute><Lessons /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/brain-gym" element={<ProtectedRoute><BrainGym /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

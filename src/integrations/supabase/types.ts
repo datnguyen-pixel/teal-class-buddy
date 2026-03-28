@@ -178,6 +178,71 @@ export type Database = {
         }
         Relationships: []
       }
+      vocab_games: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          time_per_question: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          time_per_question?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          time_per_question?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      vocab_items: {
+        Row: {
+          alt_answer: string | null
+          created_at: string
+          game_id: string
+          id: string
+          image_url: string
+          main_answer: string
+          sort_order: number
+        }
+        Insert: {
+          alt_answer?: string | null
+          created_at?: string
+          game_id: string
+          id?: string
+          image_url: string
+          main_answer: string
+          sort_order?: number
+        }
+        Update: {
+          alt_answer?: string | null
+          created_at?: string
+          game_id?: string
+          id?: string
+          image_url?: string
+          main_answer?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "vocab_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
