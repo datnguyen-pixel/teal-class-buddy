@@ -83,9 +83,15 @@ const VocabGameList = () => {
                       </Button>
                     )}
                     {isTeacher && (
-                      <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(game.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+                      <>
+                        <CreateVocabGameDialog
+                          editGame={{ id: game.id, title: game.title, time_per_question: game.time_per_question, items: game.items }}
+                          trigger={<Button size="sm" variant="outline"><Pencil className="w-4 h-4" /></Button>}
+                        />
+                        <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(game.id)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </>
                     )}
                   </div>
                 </CardContent>
