@@ -12,6 +12,7 @@ const AppSidebar = () => {
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: ClipboardList, label: 'Assignments', path: '/assignments' },
     { icon: BookOpen, label: 'Lessons', path: '/lessons' },
+    { icon: Brain, label: 'Brain Gym', path: '/brain-gym' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
