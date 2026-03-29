@@ -116,6 +116,7 @@ const Login = () => {
                 </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {blockedMessage && <p className="text-sm text-destructive">{blockedMessage}</p>}
               <Button type="submit" className="w-full h-11 text-base gradient-primary border-0" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign In as Teacher'}
               </Button>
