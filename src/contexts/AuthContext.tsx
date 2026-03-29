@@ -38,6 +38,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     if (blocked) {
       await supabase.auth.signOut();
+      setBlockedMessage('You have been removed from this application. Please contact the administrator for support.');
       return null;
     }
 
