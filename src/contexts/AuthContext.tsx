@@ -27,6 +27,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<UserProfile | null> => {
+    // Check if user is blocked
+    const { data: blocked } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('user_id', supabaseUser.id)
+      .maybeSingle();
+
+    if (blocked) {
+      await supabase.auth.signOut();
+      return null;
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
