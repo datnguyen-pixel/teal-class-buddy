@@ -13,6 +13,7 @@ const AppSidebar = () => {
     { icon: ClipboardList, label: 'Assignments', path: '/assignments' },
     { icon: BookOpen, label: 'Lessons', path: '/lessons' },
     { icon: Brain, label: 'Brain Gym', path: '/brain-gym' },
+    { icon: Users, label: 'People', path: '/people' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
