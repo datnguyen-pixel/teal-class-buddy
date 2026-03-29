@@ -43,7 +43,7 @@ const Dashboard = () => {
   const stats = [
     { icon: ClipboardList, label: 'Assignments', value: assignments.length, color: 'text-primary' },
     { icon: BookOpen, label: 'Lessons Taught', value: lessons.length, color: 'text-info' },
-    { icon: Users, label: 'Students', value: '\n', color: 'text-success' },
+    { icon: Users, label: 'People', value: '→', color: 'text-success', link: '/people' },
     { icon: TrendingUp, label: 'Avg. Grade', value: avgGrade ? `${avgGrade}%` : 'N/A', color: 'text-warning' },
   ];
 
@@ -65,7 +65,10 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {stats.map(stat => (
             <motion.div key={stat.label} variants={item}>
-              <Card className="shadow-card hover:shadow-elevated transition-shadow duration-300">
+              <Card
+                className={`shadow-card hover:shadow-elevated transition-shadow duration-300 ${stat.link ? 'cursor-pointer' : ''}`}
+                onClick={() => stat.link && navigate(stat.link)}
+              >
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">
                     <div>

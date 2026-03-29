@@ -13,7 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle, user } = useAuth();
+  const { signInWithEmail, signInWithGoogle, user, blockedMessage } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
@@ -116,6 +116,7 @@ const Login = () => {
                 </div>
               </div>
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {blockedMessage && <p className="text-sm text-destructive">{blockedMessage}</p>}
               <Button type="submit" className="w-full h-11 text-base gradient-primary border-0" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign In as Teacher'}
               </Button>

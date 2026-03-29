@@ -14,6 +14,7 @@ interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
+  blockedMessage: string | null;
   signInWithGoogle: () => Promise<void>;
   signInWithEmail: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
@@ -25,8 +26,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<UserProfile | null> => {
+    // Check if user is blocked
+    const { data: blocked } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('user_id', supabaseUser.id)
+      .maybeSingle();
+
+    if (blocked) {
+      await supabase.auth.signOut();
+      setBlockedMessage('You have been removed from this application. Please contact the administrator for support.');
+      return null;
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('*')
@@ -96,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     <AuthContext.Provider value={{
       user,
       loading,
+      blockedMessage,
       signInWithGoogle,
       signInWithEmail,
       signOut,

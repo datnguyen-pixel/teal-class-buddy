@@ -10,7 +10,9 @@ import Assignments from "./pages/Assignments";
 import Lessons from "./pages/Lessons";
 import Profile from "./pages/Profile";
 import BrainGym from "./pages/BrainGym";
+import People from "./pages/People";
 import NotFound from "./pages/NotFound";
+import ChatBubble from "./components/people/ChatBubble";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <ChatBubble />
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -35,6 +38,7 @@ const App = () => (
             <Route path="/lessons" element={<ProtectedRoute><Lessons /></ProtectedRoute>} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/brain-gym" element={<ProtectedRoute><BrainGym /></ProtectedRoute>} />
+            <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>

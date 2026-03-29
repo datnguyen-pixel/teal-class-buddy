@@ -1,6 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap, Brain } from 'lucide-react';
+import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap, Brain, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const AppSidebar = () => {
@@ -13,6 +13,7 @@ const AppSidebar = () => {
     { icon: ClipboardList, label: 'Assignments', path: '/assignments' },
     { icon: BookOpen, label: 'Lessons', path: '/lessons' },
     { icon: Brain, label: 'Brain Gym', path: '/brain-gym' },
+    { icon: Users, label: 'People', path: '/people' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
