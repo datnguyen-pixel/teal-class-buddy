@@ -10,7 +10,9 @@ import Assignments from "./pages/Assignments";
 import Lessons from "./pages/Lessons";
 import Profile from "./pages/Profile";
 import BrainGym from "./pages/BrainGym";
+import People from "./pages/People";
 import NotFound from "./pages/NotFound";
+import ChatBubble from "./components/people/ChatBubble";
 
 const queryClient = new QueryClient();
 
