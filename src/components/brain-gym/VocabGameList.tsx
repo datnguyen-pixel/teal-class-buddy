@@ -92,9 +92,30 @@ const VocabGameList = () => {
                           editGame={{ id: game.id, title: game.title, time_per_question: game.time_per_question, items: game.items }}
                           trigger={<Button size="sm" variant="outline"><Pencil className="w-4 h-4" /></Button>}
                         />
-                        <Button size="sm" variant="destructive" onClick={() => deleteMutation.mutate(game.id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button size="sm" variant="destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure you want to delete this game?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. The game and all its vocabulary items will be permanently deleted.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => deleteMutation.mutate(game.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </>
                     )}
                   </div>
