@@ -13,7 +13,7 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { signInWithEmail, signInWithGoogle, user } = useAuth();
+  const { signInWithEmail, signInWithGoogle, user, blockedMessage } = useAuth();
   const navigate = useNavigate();
 
   // Redirect if already logged in
