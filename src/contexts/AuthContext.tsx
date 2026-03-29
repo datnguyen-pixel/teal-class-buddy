@@ -26,6 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<UserProfile | null> => {
     // Check if user is blocked
