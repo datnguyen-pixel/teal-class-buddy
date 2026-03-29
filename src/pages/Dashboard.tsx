@@ -43,7 +43,7 @@ const Dashboard = () => {
   const stats = [
     { icon: ClipboardList, label: 'Assignments', value: assignments.length, color: 'text-primary' },
     { icon: BookOpen, label: 'Lessons Taught', value: lessons.length, color: 'text-info' },
-    { icon: Users, label: 'Students', value: '\n', color: 'text-success' },
+    { icon: Users, label: 'People', value: '→', color: 'text-success', link: '/people' },
     { icon: TrendingUp, label: 'Avg. Grade', value: avgGrade ? `${avgGrade}%` : 'N/A', color: 'text-warning' },
   ];
 
