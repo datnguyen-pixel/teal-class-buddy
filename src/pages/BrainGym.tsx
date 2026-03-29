@@ -8,7 +8,26 @@ import { motion } from 'framer-motion';
 import VocabGameList from '@/components/brain-gym/VocabGameList';
 
 const BrainGym = () => {
+  const { isTeacher } = useAuth();
   const [activeModule, setActiveModule] = useState<string | null>(null);
+
+  if (!isTeacher) {
+    return (
+      <AppLayout>
+        <div className="flex flex-col items-center justify-center py-24 space-y-6">
+          <motion.div initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}>
+            <div className="w-24 h-24 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto">
+              <Brain className="w-12 h-12 text-primary" />
+            </div>
+          </motion.div>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.4 }} className="text-center space-y-2">
+            <h1 className="text-3xl font-bold text-foreground">Coming Soon</h1>
+            <p className="text-muted-foreground max-w-md">This feature is currently under development and will be available soon.</p>
+          </motion.div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (activeModule === 'vocabulary') {
     return (
