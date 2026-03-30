@@ -64,6 +64,41 @@ const People = () => {
     },
   });
 
+  // Fetch unread message counts per sender
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ['unread-per-sender'],
+    queryFn: async () => {
+      if (!user) return {};
+      const { data } = await supabase
+        .from('messages')
+        .select('sender_id')
+        .eq('receiver_id', user.id)
+        .eq('read', false);
+      if (!data) return {};
+      const counts: Record<string, number> = {};
+      data.forEach(m => {
+        counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
+
+  // Realtime: refresh unread counts on new messages
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('people-unread')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
+
   const blockMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase.from('blocked_users').insert({
