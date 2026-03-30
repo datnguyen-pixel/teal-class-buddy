@@ -64,7 +64,9 @@ const Lessons = () => {
   const uploadFile = async (file: File, folder: string): Promise<string> => {
     const ext = file.name.split('.').pop();
     const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('lesson-files').upload(path, file);
+    const { error } = await supabase.storage.from('lesson-files').upload(path, file, {
+      contentType: file.type,
+    });
     if (error) throw error;
     return path;
   };
