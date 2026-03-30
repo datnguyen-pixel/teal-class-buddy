@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Search, ShieldX } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -63,6 +64,41 @@ const People = () => {
     },
   });
 
+  // Fetch unread message counts per sender
+  const { data: unreadCounts = {} } = useQuery({
+    queryKey: ['unread-per-sender'],
+    queryFn: async () => {
+      if (!user) return {};
+      const { data } = await supabase
+        .from('messages')
+        .select('sender_id')
+        .eq('receiver_id', user.id)
+        .eq('read', false);
+      if (!data) return {};
+      const counts: Record<string, number> = {};
+      data.forEach(m => {
+        counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+      });
+      return counts;
+    },
+  });
+
+  // Realtime: refresh unread counts on new messages
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('people-unread')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
+
   const blockMutation = useMutation({
     mutationFn: async (userId: string) => {
       const { error } = await supabase.from('blocked_users').insert({
@@ -116,14 +152,21 @@ const People = () => {
                 <Card className="shadow-card hover:shadow-elevated transition-shadow duration-300">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        {person.avatar_url ? (
-                          <AvatarImage src={person.avatar_url} alt={person.full_name} />
-                        ) : null}
-                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
-                          {person.full_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          {person.avatar_url ? (
+                            <AvatarImage src={person.avatar_url} alt={person.full_name} />
+                          ) : null}
+                          <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
+                            {person.full_name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {(unreadCounts[person.user_id] || 0) > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                            {unreadCounts[person.user_id]}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{person.full_name}</p>
                         <Badge
@@ -139,7 +182,11 @@ const People = () => {
                         size="sm"
                         variant="outline"
                         className="flex-1 gap-2"
-                        onClick={() => setChatWith(person)}
+                        onClick={() => {
+                          setChatWith(person);
+                          queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+                          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                        }}
                       >
                         <MessageCircle className="w-4 h-4" />
                         Chat
