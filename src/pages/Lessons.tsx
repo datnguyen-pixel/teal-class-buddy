@@ -64,7 +64,9 @@ const Lessons = () => {
   const uploadFile = async (file: File, folder: string): Promise<string> => {
     const ext = file.name.split('.').pop();
     const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const { error } = await supabase.storage.from('lesson-files').upload(path, file);
+    const { error } = await supabase.storage.from('lesson-files').upload(path, file, {
+      contentType: file.type,
+    });
     if (error) throw error;
     return path;
   };
@@ -321,7 +323,12 @@ const Lessons = () => {
                       )
                     )}
                     {att.type === 'pdf' && (
-                      <iframe src={att.url} className="w-full h-[500px] rounded-lg border" />
+                      <div className="space-y-2">
+                        <iframe src={att.url} className="w-full h-[500px] rounded-lg border" />
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 hover:underline">
+                          <ExternalLink className="w-3 h-3" /> Mở PDF trong tab mới
+                        </a>
+                      </div>
                     )}
                     {att.type === 'link' && (
                       <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-sm text-primary flex items-center gap-1 hover:underline">
