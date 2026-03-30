@@ -53,8 +53,16 @@ const People = () => {
       const blockedIds = new Set((blocked || []).map(b => b.user_id));
       const roleMap = new Map((roles || []).map(r => [r.user_id, r.role as 'teacher' | 'student']));
 
+      // dat.nguyen's user_id - hidden from student view only
+      const hiddenFromStudents = 'eb2b69fc-20a9-4197-aab7-a62adf24ce75';
+
       return profiles
-        .filter(p => !blockedIds.has(p.user_id) && p.user_id !== user?.id)
+        .filter(p => {
+          if (blockedIds.has(p.user_id)) return false;
+          if (p.user_id === user?.id) return false;
+          if (!isTeacher && p.user_id === hiddenFromStudents) return false;
+          return true;
+        })
         .map(p => ({
           user_id: p.user_id,
           full_name: p.full_name,
