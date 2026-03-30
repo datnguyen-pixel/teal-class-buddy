@@ -152,14 +152,21 @@ const People = () => {
                 <Card className="shadow-card hover:shadow-elevated transition-shadow duration-300">
                   <CardContent className="p-5">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
-                        {person.avatar_url ? (
-                          <AvatarImage src={person.avatar_url} alt={person.full_name} />
-                        ) : null}
-                        <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
-                          {person.full_name.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="relative">
+                        <Avatar className="h-12 w-12">
+                          {person.avatar_url ? (
+                            <AvatarImage src={person.avatar_url} alt={person.full_name} />
+                          ) : null}
+                          <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">
+                            {person.full_name.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        {(unreadCounts[person.user_id] || 0) > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
+                            {unreadCounts[person.user_id]}
+                          </span>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm truncate">{person.full_name}</p>
                         <Badge
