@@ -182,7 +182,11 @@ const People = () => {
                         size="sm"
                         variant="outline"
                         className="flex-1 gap-2"
-                        onClick={() => setChatWith(person)}
+                        onClick={() => {
+                          setChatWith(person);
+                          queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+                          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                        }}
                       >
                         <MessageCircle className="w-4 h-4" />
                         Chat
