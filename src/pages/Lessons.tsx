@@ -324,10 +324,19 @@ const Lessons = () => {
                     )}
                     {att.type === 'pdf' && (
                       <div className="space-y-2">
-                        <iframe src={att.url} className="w-full h-[500px] rounded-lg border" />
-                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 hover:underline">
-                          <ExternalLink className="w-3 h-3" /> Mở PDF trong tab mới
-                        </a>
+                        <iframe
+                          src={`https://docs.google.com/gview?url=${encodeURIComponent(att.url)}&embedded=true`}
+                          className="w-full h-[500px] rounded-lg border"
+                          sandbox="allow-scripts allow-same-origin"
+                        />
+                        <div className="flex gap-3">
+                          <a href={att.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary flex items-center gap-1 hover:underline">
+                            <ExternalLink className="w-3 h-3" /> Mở PDF trong tab mới
+                          </a>
+                          <a href={att.url} download className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
+                            <FileText className="w-3 h-3" /> Tải xuống
+                          </a>
+                        </div>
                       </div>
                     )}
                     {att.type === 'link' && (
