@@ -42,6 +42,7 @@ const playSound = (type: 'correct' | 'wrong' | 'complete') => {
 interface VocabItem {
   id: string;
   image_url: string;
+  question_text: string | null;
   main_answer: string;
   alt_answer: string | null;
   sort_order: number;
