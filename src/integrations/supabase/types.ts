@@ -262,8 +262,9 @@ export type Database = {
           created_at: string
           game_id: string
           id: string
-          image_url: string
+          image_url: string | null
           main_answer: string
+          question_text: string | null
           sort_order: number
         }
         Insert: {
@@ -271,8 +272,9 @@ export type Database = {
           created_at?: string
           game_id: string
           id?: string
-          image_url: string
+          image_url?: string | null
           main_answer: string
+          question_text?: string | null
           sort_order?: number
         }
         Update: {
@@ -280,8 +282,9 @@ export type Database = {
           created_at?: string
           game_id?: string
           id?: string
-          image_url?: string
+          image_url?: string | null
           main_answer?: string
+          question_text?: string | null
           sort_order?: number
         }
         Relationships: [

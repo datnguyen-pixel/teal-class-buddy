@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Upload, X, Loader2, Pencil } from 'lucide-react';
+import { Plus, Upload, X, Loader2, Pencil, Type } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -11,8 +12,10 @@ import { toast } from 'sonner';
 
 interface VocabItemDraft {
   id?: string;
+  type: 'image' | 'text';
   imageFile: File | null;
   imagePreview: string;
+  questionText: string;
   mainAnswer: string;
   altAnswer: string;
 }
@@ -21,7 +24,7 @@ interface EditGameData {
   id: string;
   title: string;
   time_per_question: number;
-  items: { id: string; image_url: string; main_answer: string; alt_answer: string | null; sort_order: number }[];
+  items: { id: string; image_url: string; question_text: string | null; main_answer: string; alt_answer: string | null; sort_order: number }[];
 }
 
 interface Props {
@@ -52,8 +55,10 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
       setTimePerQuestion(editGame.time_per_question);
       setItems(editGame.items.map(item => ({
         id: item.id,
+        type: item.question_text ? 'text' as const : 'image' as const,
         imageFile: null,
-        imagePreview: item.image_url,
+        imagePreview: item.image_url || '',
+        questionText: item.question_text || '',
         mainAnswer: item.main_answer,
         altAnswer: item.alt_answer || '',
       })));
@@ -61,7 +66,11 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   }, [open, editGame]);
 
   const addItem = () => {
-    setItems(prev => [...prev, { imageFile: null, imagePreview: '', mainAnswer: '', altAnswer: '' }]);
+    setItems(prev => [...prev, { type: 'image', imageFile: null, imagePreview: '', questionText: '', mainAnswer: '', altAnswer: '' }]);
+  };
+
+  const addTextItem = () => {
+    setItems(prev => [...prev, { type: 'text', imageFile: null, imagePreview: '', questionText: '', mainAnswer: '', altAnswer: '' }]);
   };
 
   const updateItem = (index: number, updates: Partial<VocabItemDraft>) => {
@@ -80,8 +89,11 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   const handleSave = async () => {
     if (!title.trim()) { toast.error('Please enter a game title'); return; }
     if (items.length === 0) { toast.error('Add at least one vocabulary item'); return; }
-    const invalid = items.some(i => !i.imagePreview || !i.mainAnswer.trim());
-    if (invalid) { toast.error('Each item needs an image and a main answer'); return; }
+    const invalid = items.some(i => {
+      if (i.type === 'text') return !i.questionText.trim() || !i.mainAnswer.trim();
+      return !i.imagePreview || !i.mainAnswer.trim();
+    });
+    if (invalid) { toast.error('Each item needs an image/question and a main answer'); return; }
 
     setSaving(true);
     try {
@@ -100,9 +112,9 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
         // Re-insert items
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          let imageUrl = item.imagePreview;
+          let imageUrl = item.imagePreview || null;
 
-          if (item.imageFile) {
+          if (item.type === 'image' && item.imageFile) {
             const ext = item.imageFile.name.split('.').pop();
             const path = `${editGame.id}/${crypto.randomUUID()}.${ext}`;
             const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile);
@@ -113,7 +125,8 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
 
           const { error: itemErr } = await supabase.from('vocab_items').insert({
             game_id: editGame.id,
-            image_url: imageUrl,
+            image_url: imageUrl || '',
+            question_text: item.type === 'text' ? item.questionText.trim() : null,
             main_answer: item.mainAnswer.trim(),
             alt_answer: item.altAnswer.trim() || null,
             sort_order: i,
@@ -133,16 +146,21 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          const ext = item.imageFile!.name.split('.').pop();
-          const path = `${game.id}/${crypto.randomUUID()}.${ext}`;
-          const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile!);
-          if (uploadErr) throw uploadErr;
+          let imageUrl = '';
 
-          const { data: { publicUrl } } = supabase.storage.from('vocab-images').getPublicUrl(path);
+          if (item.type === 'image' && item.imageFile) {
+            const ext = item.imageFile.name.split('.').pop();
+            const path = `${game.id}/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile);
+            if (uploadErr) throw uploadErr;
+            const { data: { publicUrl } } = supabase.storage.from('vocab-images').getPublicUrl(path);
+            imageUrl = publicUrl;
+          }
 
           const { error: itemErr } = await supabase.from('vocab_items').insert({
             game_id: game.id,
-            image_url: publicUrl,
+            image_url: imageUrl,
+            question_text: item.type === 'text' ? item.questionText.trim() : null,
             main_answer: item.mainAnswer.trim(),
             alt_answer: item.altAnswer.trim() || null,
             sort_order: i,
@@ -187,7 +205,10 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Vocabulary Items ({items.length})</Label>
-              <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
+                <Button size="sm" variant="outline" onClick={addTextItem}><Type className="w-4 h-4 mr-1" />Add Text</Button>
+              </div>
             </div>
 
             {items.map((item, idx) => (
@@ -198,23 +219,34 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
                 <p className="text-xs font-medium text-muted-foreground">Item #{idx + 1}</p>
 
                 <div className="flex gap-4">
-                  <div className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden bg-background shrink-0">
-                    {item.imagePreview ? (
-                      <label className="cursor-pointer w-full h-full relative group">
-                        <img src={item.imagePreview} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Upload className="w-5 h-5 text-white" />
-                        </div>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
-                      </label>
-                    ) : (
-                      <label className="cursor-pointer flex flex-col items-center gap-1 text-muted-foreground">
-                        <Upload className="w-5 h-5" />
-                        <span className="text-[10px]">Upload</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
-                      </label>
-                    )}
-                  </div>
+                  {item.type === 'image' ? (
+                    <div className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden bg-background shrink-0">
+                      {item.imagePreview ? (
+                        <label className="cursor-pointer w-full h-full relative group">
+                          <img src={item.imagePreview} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Upload className="w-5 h-5 text-white" />
+                          </div>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
+                        </label>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center gap-1 text-muted-foreground">
+                          <Upload className="w-5 h-5" />
+                          <span className="text-[10px]">Upload</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <Textarea
+                        value={item.questionText}
+                        onChange={e => updateItem(idx, { questionText: e.target.value })}
+                        placeholder="Enter your question text..."
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                  )}
                   <div className="flex-1 space-y-2">
                     <Input value={item.mainAnswer} onChange={e => updateItem(idx, { mainAnswer: e.target.value })} placeholder="Main answer (e.g. Erase)" />
                     <Input value={item.altAnswer} onChange={e => updateItem(idx, { altAnswer: e.target.value })} placeholder="Alternative answer (e.g. Rub Out) — optional" />

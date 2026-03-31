@@ -42,6 +42,7 @@ const playSound = (type: 'correct' | 'wrong' | 'complete') => {
 interface VocabItem {
   id: string;
   image_url: string;
+  question_text: string | null;
   main_answer: string;
   alt_answer: string | null;
   sort_order: number;
@@ -228,12 +229,18 @@ const VocabGamePlay = ({ gameId, onBack }: Props) => {
         <motion.div key={currentIndex} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.2 }}>
           <Card className="max-w-lg mx-auto">
             <CardContent className="p-6 space-y-4">
-              {/* Image */}
-              <div className="w-full aspect-square max-h-64 rounded-xl overflow-hidden bg-muted flex items-center justify-center mx-auto">
-                {currentItem && (
-                  <img src={currentItem.image_url} alt="Vocabulary" className="w-full h-full object-contain" />
-                )}
-              </div>
+              {/* Question: Image or Text */}
+              {currentItem?.question_text ? (
+                <div className="w-full min-h-[160px] max-h-64 rounded-xl bg-muted flex items-center justify-center mx-auto p-6">
+                  <p className="text-xl md:text-2xl font-semibold text-foreground text-center">{currentItem.question_text}</p>
+                </div>
+              ) : (
+                <div className="w-full aspect-square max-h-64 rounded-xl overflow-hidden bg-muted flex items-center justify-center mx-auto">
+                  {currentItem && (
+                    <img src={currentItem.image_url} alt="Vocabulary" className="w-full h-full object-contain" />
+                  )}
+                </div>
+              )}
 
               {/* Timer display */}
               <p className="text-center text-2xl font-bold text-foreground">{timeLeft}s</p>
