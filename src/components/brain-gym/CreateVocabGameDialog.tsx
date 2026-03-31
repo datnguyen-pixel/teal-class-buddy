@@ -111,9 +111,9 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
         // Re-insert items
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          let imageUrl = item.imagePreview;
+          let imageUrl = item.imagePreview || null;
 
-          if (item.imageFile) {
+          if (item.type === 'image' && item.imageFile) {
             const ext = item.imageFile.name.split('.').pop();
             const path = `${editGame.id}/${crypto.randomUUID()}.${ext}`;
             const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile);
@@ -124,7 +124,8 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
 
           const { error: itemErr } = await supabase.from('vocab_items').insert({
             game_id: editGame.id,
-            image_url: imageUrl,
+            image_url: imageUrl || '',
+            question_text: item.type === 'text' ? item.questionText.trim() : null,
             main_answer: item.mainAnswer.trim(),
             alt_answer: item.altAnswer.trim() || null,
             sort_order: i,
