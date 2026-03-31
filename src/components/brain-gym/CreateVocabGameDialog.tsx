@@ -23,7 +23,7 @@ interface EditGameData {
   id: string;
   title: string;
   time_per_question: number;
-  items: { id: string; image_url: string; main_answer: string; alt_answer: string | null; sort_order: number }[];
+  items: { id: string; image_url: string; question_text: string | null; main_answer: string; alt_answer: string | null; sort_order: number }[];
 }
 
 interface Props {
