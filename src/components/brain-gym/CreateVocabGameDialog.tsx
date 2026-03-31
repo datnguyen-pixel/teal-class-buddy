@@ -65,7 +65,11 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   }, [open, editGame]);
 
   const addItem = () => {
-    setItems(prev => [...prev, { imageFile: null, imagePreview: '', mainAnswer: '', altAnswer: '' }]);
+    setItems(prev => [...prev, { type: 'image', imageFile: null, imagePreview: '', questionText: '', mainAnswer: '', altAnswer: '' }]);
+  };
+
+  const addTextItem = () => {
+    setItems(prev => [...prev, { type: 'text', imageFile: null, imagePreview: '', questionText: '', mainAnswer: '', altAnswer: '' }]);
   };
 
   const updateItem = (index: number, updates: Partial<VocabItemDraft>) => {
