@@ -54,8 +54,10 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
       setTimePerQuestion(editGame.time_per_question);
       setItems(editGame.items.map(item => ({
         id: item.id,
+        type: item.question_text ? 'text' as const : 'image' as const,
         imageFile: null,
-        imagePreview: item.image_url,
+        imagePreview: item.image_url || '',
+        questionText: item.question_text || '',
         mainAnswer: item.main_answer,
         altAnswer: item.alt_answer || '',
       })));
