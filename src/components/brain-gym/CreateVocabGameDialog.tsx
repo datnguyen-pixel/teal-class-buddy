@@ -219,23 +219,34 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
                 <p className="text-xs font-medium text-muted-foreground">Item #{idx + 1}</p>
 
                 <div className="flex gap-4">
-                  <div className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden bg-background shrink-0">
-                    {item.imagePreview ? (
-                      <label className="cursor-pointer w-full h-full relative group">
-                        <img src={item.imagePreview} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Upload className="w-5 h-5 text-white" />
-                        </div>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
-                      </label>
-                    ) : (
-                      <label className="cursor-pointer flex flex-col items-center gap-1 text-muted-foreground">
-                        <Upload className="w-5 h-5" />
-                        <span className="text-[10px]">Upload</span>
-                        <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
-                      </label>
-                    )}
-                  </div>
+                  {item.type === 'image' ? (
+                    <div className="w-24 h-24 border-2 border-dashed rounded-lg flex items-center justify-center overflow-hidden bg-background shrink-0">
+                      {item.imagePreview ? (
+                        <label className="cursor-pointer w-full h-full relative group">
+                          <img src={item.imagePreview} alt="" className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Upload className="w-5 h-5 text-white" />
+                          </div>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
+                        </label>
+                      ) : (
+                        <label className="cursor-pointer flex flex-col items-center gap-1 text-muted-foreground">
+                          <Upload className="w-5 h-5" />
+                          <span className="text-[10px]">Upload</span>
+                          <input type="file" accept="image/*" className="hidden" onChange={e => e.target.files?.[0] && handleImageChange(idx, e.target.files[0])} />
+                        </label>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex-1">
+                      <Textarea
+                        value={item.questionText}
+                        onChange={e => updateItem(idx, { questionText: e.target.value })}
+                        placeholder="Enter your question text..."
+                        className="min-h-[80px]"
+                      />
+                    </div>
+                  )}
                   <div className="flex-1 space-y-2">
                     <Input value={item.mainAnswer} onChange={e => updateItem(idx, { mainAnswer: e.target.value })} placeholder="Main answer (e.g. Erase)" />
                     <Input value={item.altAnswer} onChange={e => updateItem(idx, { altAnswer: e.target.value })} placeholder="Alternative answer (e.g. Rub Out) — optional" />
