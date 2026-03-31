@@ -145,16 +145,21 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
 
         for (let i = 0; i < items.length; i++) {
           const item = items[i];
-          const ext = item.imageFile!.name.split('.').pop();
-          const path = `${game.id}/${crypto.randomUUID()}.${ext}`;
-          const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile!);
-          if (uploadErr) throw uploadErr;
+          let imageUrl = '';
 
-          const { data: { publicUrl } } = supabase.storage.from('vocab-images').getPublicUrl(path);
+          if (item.type === 'image' && item.imageFile) {
+            const ext = item.imageFile.name.split('.').pop();
+            const path = `${game.id}/${crypto.randomUUID()}.${ext}`;
+            const { error: uploadErr } = await supabase.storage.from('vocab-images').upload(path, item.imageFile);
+            if (uploadErr) throw uploadErr;
+            const { data: { publicUrl } } = supabase.storage.from('vocab-images').getPublicUrl(path);
+            imageUrl = publicUrl;
+          }
 
           const { error: itemErr } = await supabase.from('vocab_items').insert({
             game_id: game.id,
-            image_url: publicUrl,
+            image_url: imageUrl,
+            question_text: item.type === 'text' ? item.questionText.trim() : null,
             main_answer: item.mainAnswer.trim(),
             alt_answer: item.altAnswer.trim() || null,
             sort_order: i,
