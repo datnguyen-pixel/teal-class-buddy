@@ -88,8 +88,11 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   const handleSave = async () => {
     if (!title.trim()) { toast.error('Please enter a game title'); return; }
     if (items.length === 0) { toast.error('Add at least one vocabulary item'); return; }
-    const invalid = items.some(i => !i.imagePreview || !i.mainAnswer.trim());
-    if (invalid) { toast.error('Each item needs an image and a main answer'); return; }
+    const invalid = items.some(i => {
+      if (i.type === 'text') return !i.questionText.trim() || !i.mainAnswer.trim();
+      return !i.imagePreview || !i.mainAnswer.trim();
+    });
+    if (invalid) { toast.error('Each item needs an image/question and a main answer'); return; }
 
     setSaving(true);
     try {
