@@ -11,8 +11,10 @@ import { toast } from 'sonner';
 
 interface VocabItemDraft {
   id?: string;
+  type: 'image' | 'text';
   imageFile: File | null;
   imagePreview: string;
+  questionText: string;
   mainAnswer: string;
   altAnswer: string;
 }
