@@ -205,7 +205,10 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Vocabulary Items ({items.length})</Label>
-              <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={addItem}><Plus className="w-4 h-4 mr-1" />Add Item</Button>
+                <Button size="sm" variant="outline" onClick={addTextItem}><Type className="w-4 h-4 mr-1" />Add Text</Button>
+              </div>
             </div>
 
             {items.map((item, idx) => (
