@@ -219,7 +219,7 @@ const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAs
           </div>
 
           <Button onClick={handleCreate} className="w-full gradient-primary border-0" disabled={createMutation.isPending}>
-            {createMutation.isPending ? 'Creating...' : 'Create Assignment'}
+            {createMutation.isPending ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Assignment' : 'Create Assignment')}
           </Button>
         </div>
       </DialogContent>
