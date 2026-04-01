@@ -180,9 +180,15 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Due Time</Label>
+              <Input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)} />
+            </div>
           </div>
 
           <Button onClick={handleCreate} className="w-full gradient-primary border-0" disabled={createMutation.isPending}>
