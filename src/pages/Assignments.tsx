@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
+import { Calendar, Clock, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -168,6 +168,13 @@ const Assignments = () => {
             const badge = TYPE_BADGES[assignmentType] || TYPE_BADGES.essay;
             const BadgeIcon = badge.icon;
 
+            // Build deadline from due_date + due_time
+            const deadlineStr = assignment.due_time
+              ? `${assignment.due_date}T${assignment.due_time}`
+              : `${assignment.due_date}T23:59`;
+            const deadline = new Date(deadlineStr);
+            const isPastDue = new Date() > deadline;
+
             return (
               <motion.div key={assignment.id} variants={item}>
                 <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
@@ -186,6 +193,15 @@ const Assignments = () => {
                             <Calendar className="w-3.5 h-3.5" />
                             Due {new Date(assignment.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
+                          {assignment.due_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {new Date(`2000-01-01T${assignment.due_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {isPastDue && (
+                            <span className="text-destructive font-medium">Past due</span>
+                          )}
                           <span className="flex items-center gap-1">
                             <FileText className="w-3.5 h-3.5" />
                             {assignmentSubs.length} submissions
@@ -194,7 +210,7 @@ const Assignments = () => {
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         {/* Student submit button */}
-                        {!isTeacher && !mySubmission && (
+                        {!isTeacher && !mySubmission && !isPastDue && (
                           <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {
                             setSubmitDialogId(o ? assignment.id : null);
                             if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; }
@@ -268,6 +284,13 @@ const Assignments = () => {
                               </div>
                             </DialogContent>
                           </Dialog>
+                        )}
+
+                        {/* Past due message for students */}
+                        {!isTeacher && !mySubmission && isPastDue && (
+                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-destructive/10 text-destructive">
+                            Past due — can no longer submit
+                          </span>
                         )}
 
                         {/* Student result badge */}

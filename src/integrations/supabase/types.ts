@@ -21,6 +21,7 @@ export type Database = {
           created_by: string
           description: string
           due_date: string
+          due_time: string | null
           id: string
           options: Json | null
           title: string
@@ -33,6 +34,7 @@ export type Database = {
           created_by: string
           description?: string
           due_date: string
+          due_time?: string | null
           id?: string
           options?: Json | null
           title: string
@@ -45,6 +47,7 @@ export type Database = {
           created_by?: string
           description?: string
           due_date?: string
+          due_time?: string | null
           id?: string
           options?: Json | null
           title?: string

@@ -29,6 +29,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('');
   // MC-specific state
   const [options, setOptions] = useState<string[]>(['', '']);
   const [correctAnswer, setCorrectAnswer] = useState('');
@@ -38,6 +39,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
     setTitle('');
     setDescription('');
     setDueDate('');
+    setDueTime('');
     setOptions(['', '']);
     setCorrectAnswer('');
   };
@@ -48,6 +50,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
         title,
         description,
         due_date: dueDate,
+        due_time: dueTime || null,
         created_by: userId,
         type,
       };
@@ -177,9 +180,15 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Due Time</Label>
+              <Input type="time" value={dueTime} onChange={e => setDueTime(e.target.value)} />
+            </div>
           </div>
 
           <Button onClick={handleCreate} className="w-full gradient-primary border-0" disabled={createMutation.isPending}>
