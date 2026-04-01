@@ -12,8 +12,21 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type AssignmentType = 'essay' | 'multiple_choice' | 'speaking';
 
+interface AssignmentToEdit {
+  id: string;
+  title: string;
+  description: string;
+  due_date: string;
+  due_time?: string | null;
+  type: string;
+  options?: any;
+  correct_answer?: string | null;
+}
+
 interface CreateAssignmentDialogProps {
   userId: string;
+  editAssignment?: AssignmentToEdit;
+  onEditDone?: () => void;
 }
 
 const TYPE_LABELS: Record<AssignmentType, string> = {
