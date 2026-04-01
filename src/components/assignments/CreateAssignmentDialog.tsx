@@ -62,12 +62,11 @@ const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAs
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const insertData: any = {
+      const data: any = {
         title,
         description,
         due_date: dueDate,
         due_time: dueTime || null,
-        created_by: userId,
         type,
       };
 
@@ -75,18 +74,25 @@ const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAs
         const filledOptions = options.filter(o => o.trim());
         if (filledOptions.length < 2) throw new Error('At least 2 options required');
         if (!correctAnswer) throw new Error('Select a correct answer');
-        insertData.options = filledOptions;
-        insertData.correct_answer = correctAnswer;
+        data.options = filledOptions;
+        data.correct_answer = correctAnswer;
       }
 
-      const { error } = await supabase.from('assignments').insert(insertData);
-      if (error) throw error;
+      if (isEditing) {
+        const { error } = await supabase.from('assignments').update(data).eq('id', editAssignment!.id);
+        if (error) throw error;
+      } else {
+        data.created_by = userId;
+        const { error } = await supabase.from('assignments').insert(data);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      resetForm();
+      if (!isEditing) resetForm();
       setOpen(false);
-      toast.success('Assignment created!');
+      if (onEditDone) onEditDone();
+      toast.success(isEditing ? 'Assignment updated!' : 'Assignment created!');
     },
     onError: (e: Error) => toast.error(e.message),
   });
