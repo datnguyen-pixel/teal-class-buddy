@@ -346,6 +346,15 @@ const Assignments = () => {
             <p className="text-center py-12 text-muted-foreground">No assignments yet</p>
           )}
         </div>
+
+        {/* Edit assignment dialog */}
+        {editingAssignment && (
+          <CreateAssignmentDialog
+            userId={user!.id}
+            editAssignment={editingAssignment}
+            onEditDone={() => setEditingAssignment(null)}
+          />
+        )}
       </motion.div>
     </AppLayout>
   );
