@@ -144,6 +144,7 @@ const Assignments = () => {
 
   const handleRecordingComplete = useCallback((blob: Blob) => {
     audioBlobRef.current = blob;
+    setHasRecording(true);
   }, []);
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
