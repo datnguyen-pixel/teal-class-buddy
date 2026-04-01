@@ -12,8 +12,21 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 type AssignmentType = 'essay' | 'multiple_choice' | 'speaking';
 
+interface AssignmentToEdit {
+  id: string;
+  title: string;
+  description: string;
+  due_date: string;
+  due_time?: string | null;
+  type: string;
+  options?: any;
+  correct_answer?: string | null;
+}
+
 interface CreateAssignmentDialogProps {
   userId: string;
+  editAssignment?: AssignmentToEdit;
+  onEditDone?: () => void;
 }
 
 const TYPE_LABELS: Record<AssignmentType, string> = {
@@ -22,17 +35,20 @@ const TYPE_LABELS: Record<AssignmentType, string> = {
   speaking: 'Speaking',
 };
 
-const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
+const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAssignmentDialogProps) => {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<AssignmentType>('essay');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [dueTime, setDueTime] = useState('');
+  const isEditing = !!editAssignment;
+  const [open, setOpen] = useState(isEditing);
+  const [type, setType] = useState<AssignmentType>((editAssignment?.type as AssignmentType) || 'essay');
+  const [title, setTitle] = useState(editAssignment?.title || '');
+  const [description, setDescription] = useState(editAssignment?.description || '');
+  const [dueDate, setDueDate] = useState(editAssignment?.due_date || '');
+  const [dueTime, setDueTime] = useState(editAssignment?.due_time || '');
   // MC-specific state
-  const [options, setOptions] = useState<string[]>(['', '']);
-  const [correctAnswer, setCorrectAnswer] = useState('');
+  const [options, setOptions] = useState<string[]>(
+    editAssignment?.options && Array.isArray(editAssignment.options) ? editAssignment.options : ['', '']
+  );
+  const [correctAnswer, setCorrectAnswer] = useState(editAssignment?.correct_answer || '');
 
   const resetForm = () => {
     setType('essay');
@@ -46,12 +62,11 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const insertData: any = {
+      const data: any = {
         title,
         description,
         due_date: dueDate,
         due_time: dueTime || null,
-        created_by: userId,
         type,
       };
 
@@ -59,18 +74,25 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
         const filledOptions = options.filter(o => o.trim());
         if (filledOptions.length < 2) throw new Error('At least 2 options required');
         if (!correctAnswer) throw new Error('Select a correct answer');
-        insertData.options = filledOptions;
-        insertData.correct_answer = correctAnswer;
+        data.options = filledOptions;
+        data.correct_answer = correctAnswer;
       }
 
-      const { error } = await supabase.from('assignments').insert(insertData);
-      if (error) throw error;
+      if (isEditing) {
+        const { error } = await supabase.from('assignments').update(data).eq('id', editAssignment!.id);
+        if (error) throw error;
+      } else {
+        data.created_by = userId;
+        const { error } = await supabase.from('assignments').insert(data);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      resetForm();
+      if (!isEditing) resetForm();
       setOpen(false);
-      toast.success('Assignment created!');
+      if (onEditDone) onEditDone();
+      toast.success(isEditing ? 'Assignment updated!' : 'Assignment created!');
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -101,12 +123,17 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gradient-primary border-0 gap-2"><Plus className="w-4 h-4" /> New Assignment</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      if (!o && isEditing && onEditDone) onEditDone();
+    }}>
+      {!isEditing && (
+        <DialogTrigger asChild>
+          <Button className="gradient-primary border-0 gap-2"><Plus className="w-4 h-4" /> New Assignment</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Create Assignment</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? 'Edit Assignment' : 'Create Assignment'}</DialogTitle></DialogHeader>
         <div className="space-y-4 mt-4">
           {/* Type selector */}
           <div className="space-y-2">
@@ -192,7 +219,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
           </div>
 
           <Button onClick={handleCreate} className="w-full gradient-primary border-0" disabled={createMutation.isPending}>
-            {createMutation.isPending ? 'Creating...' : 'Create Assignment'}
+            {createMutation.isPending ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Assignment' : 'Create Assignment')}
           </Button>
         </div>
       </DialogContent>

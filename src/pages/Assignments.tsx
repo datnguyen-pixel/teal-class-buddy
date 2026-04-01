@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, Clock, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
+import { Calendar, Clock, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck, Pencil } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -26,6 +26,7 @@ const Assignments = () => {
   const [submissionText, setSubmissionText] = useState('');
   const [submitDialogId, setSubmitDialogId] = useState<string | null>(null);
   const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const audioBlobRef = useRef<Blob | null>(null);
 
   const { data: assignments = [] } = useQuery({
@@ -306,9 +307,14 @@ const Assignments = () => {
                         )}
 
                         {isTeacher && (
-                          <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(assignment.id)} className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingAssignment(assignment)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(assignment.id)} className="text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -340,6 +346,15 @@ const Assignments = () => {
             <p className="text-center py-12 text-muted-foreground">No assignments yet</p>
           )}
         </div>
+
+        {/* Edit assignment dialog */}
+        {editingAssignment && (
+          <CreateAssignmentDialog
+            userId={user!.id}
+            editAssignment={editingAssignment}
+            onEditDone={() => setEditingAssignment(null)}
+          />
+        )}
       </motion.div>
     </AppLayout>
   );
