@@ -39,6 +39,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
     setTitle('');
     setDescription('');
     setDueDate('');
+    setDueTime('');
     setOptions(['', '']);
     setCorrectAnswer('');
   };
