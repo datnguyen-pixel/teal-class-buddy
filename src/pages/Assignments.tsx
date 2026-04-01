@@ -193,6 +193,15 @@ const Assignments = () => {
                             <Calendar className="w-3.5 h-3.5" />
                             Due {new Date(assignment.due_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           </span>
+                          {assignment.due_time && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5" />
+                              {new Date(`2000-01-01T${assignment.due_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                          )}
+                          {isPastDue && (
+                            <span className="text-destructive font-medium">Past due</span>
+                          )}
                           <span className="flex items-center gap-1">
                             <FileText className="w-3.5 h-3.5" />
                             {assignmentSubs.length} submissions
