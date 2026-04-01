@@ -125,6 +125,7 @@ const Assignments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
       audioBlobRef.current = null;
+      setHasRecording(false);
       setSubmitDialogId(null);
       toast.success('Recording submitted!');
     },
