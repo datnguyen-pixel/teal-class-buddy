@@ -286,6 +286,13 @@ const Assignments = () => {
                           </Dialog>
                         )}
 
+                        {/* Past due message for students */}
+                        {!isTeacher && !mySubmission && isPastDue && (
+                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-destructive/10 text-destructive">
+                            Past due — can no longer submit
+                          </span>
+                        )}
+
                         {/* Student result badge */}
                         {!isTeacher && mySubmission && (
                           <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-secondary-foreground">
