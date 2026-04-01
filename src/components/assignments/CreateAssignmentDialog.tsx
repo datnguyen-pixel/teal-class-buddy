@@ -29,6 +29,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('');
   // MC-specific state
   const [options, setOptions] = useState<string[]>(['', '']);
   const [correctAnswer, setCorrectAnswer] = useState('');
