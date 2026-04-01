@@ -50,6 +50,7 @@ const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
         title,
         description,
         due_date: dueDate,
+        due_time: dueTime || null,
         created_by: userId,
         type,
       };
