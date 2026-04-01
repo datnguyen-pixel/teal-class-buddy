@@ -26,6 +26,7 @@ const Assignments = () => {
   const [submissionText, setSubmissionText] = useState('');
   const [submitDialogId, setSubmitDialogId] = useState<string | null>(null);
   const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
+  const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const audioBlobRef = useRef<Blob | null>(null);
 
   const { data: assignments = [] } = useQuery({
