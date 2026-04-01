@@ -35,17 +35,20 @@ const TYPE_LABELS: Record<AssignmentType, string> = {
   speaking: 'Speaking',
 };
 
-const CreateAssignmentDialog = ({ userId }: CreateAssignmentDialogProps) => {
+const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAssignmentDialogProps) => {
   const queryClient = useQueryClient();
-  const [open, setOpen] = useState(false);
-  const [type, setType] = useState<AssignmentType>('essay');
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [dueTime, setDueTime] = useState('');
+  const isEditing = !!editAssignment;
+  const [open, setOpen] = useState(isEditing);
+  const [type, setType] = useState<AssignmentType>((editAssignment?.type as AssignmentType) || 'essay');
+  const [title, setTitle] = useState(editAssignment?.title || '');
+  const [description, setDescription] = useState(editAssignment?.description || '');
+  const [dueDate, setDueDate] = useState(editAssignment?.due_date || '');
+  const [dueTime, setDueTime] = useState(editAssignment?.due_time || '');
   // MC-specific state
-  const [options, setOptions] = useState<string[]>(['', '']);
-  const [correctAnswer, setCorrectAnswer] = useState('');
+  const [options, setOptions] = useState<string[]>(
+    editAssignment?.options && Array.isArray(editAssignment.options) ? editAssignment.options : ['', '']
+  );
+  const [correctAnswer, setCorrectAnswer] = useState(editAssignment?.correct_answer || '');
 
   const resetForm = () => {
     setType('essay');
