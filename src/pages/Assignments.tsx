@@ -28,6 +28,7 @@ const Assignments = () => {
   const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
   const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const audioBlobRef = useRef<Blob | null>(null);
+  const [hasRecording, setHasRecording] = useState(false);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments'],
