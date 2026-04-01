@@ -123,12 +123,17 @@ const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAs
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gradient-primary border-0 gap-2"><Plus className="w-4 h-4" /> New Assignment</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      if (!o && isEditing && onEditDone) onEditDone();
+    }}>
+      {!isEditing && (
+        <DialogTrigger asChild>
+          <Button className="gradient-primary border-0 gap-2"><Plus className="w-4 h-4" /> New Assignment</Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Create Assignment</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{isEditing ? 'Edit Assignment' : 'Create Assignment'}</DialogTitle></DialogHeader>
         <div className="space-y-4 mt-4">
           {/* Type selector */}
           <div className="space-y-2">
