@@ -28,6 +28,7 @@ const Assignments = () => {
   const [selectedMcAnswer, setSelectedMcAnswer] = useState('');
   const [editingAssignment, setEditingAssignment] = useState<any>(null);
   const audioBlobRef = useRef<Blob | null>(null);
+  const [hasRecording, setHasRecording] = useState(false);
 
   const { data: assignments = [] } = useQuery({
     queryKey: ['assignments'],
@@ -124,6 +125,7 @@ const Assignments = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
       audioBlobRef.current = null;
+      setHasRecording(false);
       setSubmitDialogId(null);
       toast.success('Recording submitted!');
     },
@@ -143,6 +145,7 @@ const Assignments = () => {
 
   const handleRecordingComplete = useCallback((blob: Blob) => {
     audioBlobRef.current = blob;
+    setHasRecording(true);
   }, []);
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.06 } } };
@@ -214,7 +217,7 @@ const Assignments = () => {
                         {!isTeacher && !mySubmission && !isPastDue && (
                           <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {
                             setSubmitDialogId(o ? assignment.id : null);
-                            if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; }
+                            if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; setHasRecording(false); }
                           }}>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" className="gap-1.5">
@@ -276,7 +279,7 @@ const Assignments = () => {
                                     <Button
                                       onClick={() => submitSpeakingMutation.mutate(assignment.id)}
                                       className="w-full gradient-primary border-0"
-                                      disabled={!audioBlobRef.current || submitSpeakingMutation.isPending}
+                                      disabled={!hasRecording || submitSpeakingMutation.isPending}
                                     >
                                       {submitSpeakingMutation.isPending ? 'Uploading...' : 'Submit Recording'}
                                     </Button>
