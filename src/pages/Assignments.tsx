@@ -279,7 +279,7 @@ const Assignments = () => {
                                     <Button
                                       onClick={() => submitSpeakingMutation.mutate(assignment.id)}
                                       className="w-full gradient-primary border-0"
-                                      disabled={!audioBlobRef.current || submitSpeakingMutation.isPending}
+                                      disabled={!hasRecording || submitSpeakingMutation.isPending}
                                     >
                                       {submitSpeakingMutation.isPending ? 'Uploading...' : 'Submit Recording'}
                                     </Button>
