@@ -168,6 +168,13 @@ const Assignments = () => {
             const badge = TYPE_BADGES[assignmentType] || TYPE_BADGES.essay;
             const BadgeIcon = badge.icon;
 
+            // Build deadline from due_date + due_time
+            const deadlineStr = assignment.due_time
+              ? `${assignment.due_date}T${assignment.due_time}`
+              : `${assignment.due_date}T23:59`;
+            const deadline = new Date(deadlineStr);
+            const isPastDue = new Date() > deadline;
+
             return (
               <motion.div key={assignment.id} variants={item}>
                 <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
