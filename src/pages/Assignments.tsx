@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Calendar, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
+import { Calendar, Clock, FileText, MessageSquare, Trash2, Mic, CheckCircle2, PenLine, BadgeCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
