@@ -210,7 +210,7 @@ const Assignments = () => {
                       </div>
                       <div className="flex items-center gap-2 ml-4">
                         {/* Student submit button */}
-                        {!isTeacher && !mySubmission && (
+                        {!isTeacher && !mySubmission && !isPastDue && (
                           <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {
                             setSubmitDialogId(o ? assignment.id : null);
                             if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; }
