@@ -216,7 +216,7 @@ const Assignments = () => {
                         {!isTeacher && !mySubmission && !isPastDue && (
                           <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {
                             setSubmitDialogId(o ? assignment.id : null);
-                            if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; }
+                            if (!o) { setSubmissionText(''); setSelectedMcAnswer(''); audioBlobRef.current = null; setHasRecording(false); }
                           }}>
                             <DialogTrigger asChild>
                               <Button variant="outline" size="sm" className="gap-1.5">
