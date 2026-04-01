@@ -307,9 +307,14 @@ const Assignments = () => {
                         )}
 
                         {isTeacher && (
-                          <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(assignment.id)} className="text-destructive hover:text-destructive">
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
+                          <>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingAssignment(assignment)}>
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(assignment.id)} className="text-destructive hover:text-destructive">
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
