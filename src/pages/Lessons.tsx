@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, BookOpen, ExternalLink, Edit, CheckCircle2, Plus, Trash2, Upload, Image, FileText, Video, Link, X, Eye } from 'lucide-react';
+import { Search, BookOpen, ExternalLink, Edit, CheckCircle2, Plus, Trash2, Upload, Image, FileText, Video, Link, X, Eye, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import LessonComments from '@/components/lessons/LessonComments';
 
 type Attachment = {
   type: 'link' | 'pdf' | 'image' | 'video';
