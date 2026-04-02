@@ -60,6 +60,30 @@ const Lessons = () => {
     },
   });
 
+  // Comment counts per lesson
+  const { data: commentCounts = {} } = useQuery({
+    queryKey: ['comment-counts'],
+    queryFn: async () => {
+      const { data } = await supabase.from('lesson_comments').select('lesson_id');
+      const counts: Record<number, number> = {};
+      (data || []).forEach(c => { counts[c.lesson_id] = (counts[c.lesson_id] || 0) + 1; });
+      return counts;
+    },
+  });
+
+  // Handle navigation from notification click
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.openCommentLessonId) {
+      const lesson = lessons.find((l: any) => l.id === state.openCommentLessonId);
+      if (lesson) {
+        setCommentLessonId(lesson.id);
+        setCommentLessonTitle(lesson.title);
+      }
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, lessons]);
+
   const filtered = useMemo(() => {
     if (!search.trim()) return lessons;
     const q = search.toLowerCase();
