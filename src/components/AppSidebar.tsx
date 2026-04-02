@@ -18,6 +18,8 @@ const AppSidebar = () => {
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
+  // Notification bell is rendered separately after profile nav item
+
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 gradient-hero flex flex-col z-50">
       <div className="p-6 border-b border-sidebar-border">
