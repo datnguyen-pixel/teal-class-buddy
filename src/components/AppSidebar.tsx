@@ -53,6 +53,7 @@ const AppSidebar = () => {
             </button>
           );
         })}
+        <NotificationBell />
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">
