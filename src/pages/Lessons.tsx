@@ -433,6 +433,9 @@ const Lessons = () => {
                       <button onClick={(e) => { e.stopPropagation(); openPreview(lesson); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
                         <Eye className="w-3 h-3" /> Xem
                       </button>
+                      <button onClick={(e) => { e.stopPropagation(); setCommentLessonId(lesson.id); setCommentLessonTitle(lesson.title); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
+                        <MessageCircle className="w-3 h-3" /> {(commentCounts as Record<number, number>)[lesson.id] || 0}
+                      </button>
                       {isTeacher && (
                         <button onClick={(e) => { e.stopPropagation(); startEdit(lesson); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground ml-auto">
                           <Edit className="w-3 h-3" /> Sửa
