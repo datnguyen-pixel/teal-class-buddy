@@ -80,6 +80,41 @@ export type Database = {
         }
         Relationships: []
       }
+      lesson_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          lesson_id: number
+          parent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          lesson_id: number
+          parent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          lesson_id?: number
+          parent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lesson_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lessons: {
         Row: {
           attachments: Json | null
@@ -142,6 +177,50 @@ export type Database = {
           sender_id?: string
         }
         Relationships: []
+      }
+      notifications: {
+        Row: {
+          comment_id: string | null
+          content_preview: string | null
+          created_at: string
+          id: string
+          lesson_id: number
+          read: boolean
+          triggered_by: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          comment_id?: string | null
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          lesson_id: number
+          read?: boolean
+          triggered_by: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string | null
+          content_preview?: string | null
+          created_at?: string
+          id?: string
+          lesson_id?: number
+          read?: boolean
+          triggered_by?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "lesson_comments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

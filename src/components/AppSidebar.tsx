@@ -2,6 +2,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap, Brain, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import NotificationBell from '@/components/NotificationBell';
 
 const AppSidebar = () => {
   const { user, signOut, isTeacher } = useAuth();
@@ -16,6 +17,8 @@ const AppSidebar = () => {
     { icon: Users, label: 'People', path: '/people' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
+
+  // Notification bell is rendered separately after profile nav item
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 gradient-hero flex flex-col z-50">
@@ -50,6 +53,7 @@ const AppSidebar = () => {
             </button>
           );
         })}
+        <NotificationBell />
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">

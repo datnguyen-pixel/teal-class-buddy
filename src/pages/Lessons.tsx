@@ -1,5 +1,6 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,11 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, BookOpen, ExternalLink, Edit, CheckCircle2, Plus, Trash2, Upload, Image, FileText, Video, Link, X, Eye } from 'lucide-react';
+import { Search, BookOpen, ExternalLink, Edit, CheckCircle2, Plus, Trash2, Upload, Image, FileText, Video, Link, X, Eye, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import LessonComments from '@/components/lessons/LessonComments';
 
 type Attachment = {
   type: 'link' | 'pdf' | 'image' | 'video';
@@ -28,6 +30,7 @@ const getStorageUrl = (path: string) =>
 const Lessons = () => {
   const { isTeacher } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [editTitle, setEditTitle] = useState('');
@@ -38,6 +41,8 @@ const Lessons = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLesson, setPreviewLesson] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
+  const [commentLessonId, setCommentLessonId] = useState<number | null>(null);
+  const [commentLessonTitle, setCommentLessonTitle] = useState('');
 
   // New link form
   const [newLinkUrl, setNewLinkUrl] = useState('');
@@ -54,6 +59,30 @@ const Lessons = () => {
       return data || [];
     },
   });
+
+  // Comment counts per lesson
+  const { data: commentCounts = {} } = useQuery({
+    queryKey: ['comment-counts'],
+    queryFn: async () => {
+      const { data } = await supabase.from('lesson_comments').select('lesson_id');
+      const counts: Record<number, number> = {};
+      (data || []).forEach(c => { counts[c.lesson_id] = (counts[c.lesson_id] || 0) + 1; });
+      return counts;
+    },
+  });
+
+  // Handle navigation from notification click
+  useEffect(() => {
+    const state = location.state as any;
+    if (state?.openCommentLessonId) {
+      const lesson = lessons.find((l: any) => l.id === state.openCommentLessonId);
+      if (lesson) {
+        setCommentLessonId(lesson.id);
+        setCommentLessonTitle(lesson.title);
+      }
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, lessons]);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return lessons;
@@ -404,6 +433,9 @@ const Lessons = () => {
                       <button onClick={(e) => { e.stopPropagation(); openPreview(lesson); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
                         <Eye className="w-3 h-3" /> Xem
                       </button>
+                      <button onClick={(e) => { e.stopPropagation(); setCommentLessonId(lesson.id); setCommentLessonTitle(lesson.title); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground">
+                        <MessageCircle className="w-3 h-3" /> {(commentCounts as Record<number, number>)[lesson.id] || 0}
+                      </button>
                       {isTeacher && (
                         <button onClick={(e) => { e.stopPropagation(); startEdit(lesson); }} className="text-xs text-muted-foreground flex items-center gap-1 hover:text-foreground ml-auto">
                           <Edit className="w-3 h-3" /> Sửa
@@ -422,6 +454,15 @@ const Lessons = () => {
             <BookOpen className="w-10 h-10 mx-auto mb-3 opacity-40" />
             <p>Không tìm thấy bài giảng phù hợp "{search}"</p>
           </div>
+        )}
+        {/* Comments Dialog */}
+        {commentLessonId !== null && (
+          <LessonComments
+            lessonId={commentLessonId}
+            lessonTitle={commentLessonTitle}
+            open={commentLessonId !== null}
+            onOpenChange={(open) => { if (!open) { setCommentLessonId(null); setCommentLessonTitle(''); } }}
+          />
         )}
       </div>
     </AppLayout>
