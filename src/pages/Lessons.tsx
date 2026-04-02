@@ -455,6 +455,15 @@ const Lessons = () => {
             <p>Không tìm thấy bài giảng phù hợp "{search}"</p>
           </div>
         )}
+        {/* Comments Dialog */}
+        {commentLessonId !== null && (
+          <LessonComments
+            lessonId={commentLessonId}
+            lessonTitle={commentLessonTitle}
+            open={commentLessonId !== null}
+            onOpenChange={(open) => { if (!open) { setCommentLessonId(null); setCommentLessonTitle(''); } }}
+          />
+        )}
       </div>
     </AppLayout>
   );
