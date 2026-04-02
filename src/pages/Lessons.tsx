@@ -30,6 +30,7 @@ const getStorageUrl = (path: string) =>
 const Lessons = () => {
   const { isTeacher } = useAuth();
   const queryClient = useQueryClient();
+  const location = useLocation();
   const [search, setSearch] = useState('');
   const [editingLesson, setEditingLesson] = useState<any>(null);
   const [editTitle, setEditTitle] = useState('');
