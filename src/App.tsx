@@ -11,6 +11,7 @@ import Lessons from "./pages/Lessons";
 import Profile from "./pages/Profile";
 import BrainGym from "./pages/BrainGym";
 import People from "./pages/People";
+import Notifications from "./pages/Notifications";
 import NotFound from "./pages/NotFound";
 import ChatBubble from "./components/people/ChatBubble";
 
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/brain-gym" element={<ProtectedRoute><BrainGym /></ProtectedRoute>} />
             <Route path="/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
+            <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
