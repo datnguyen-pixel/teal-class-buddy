@@ -41,6 +41,8 @@ const Lessons = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewLesson, setPreviewLesson] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
+  const [commentLessonId, setCommentLessonId] = useState<number | null>(null);
+  const [commentLessonTitle, setCommentLessonTitle] = useState('');
 
   // New link form
   const [newLinkUrl, setNewLinkUrl] = useState('');
