@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Play, Pause } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import EmojiPicker from '@/components/ui/emoji-picker';
 
 interface GradeRowProps {
   sub: any;
