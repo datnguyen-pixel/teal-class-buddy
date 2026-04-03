@@ -124,27 +124,8 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-        {messages.length === 0 && (
-          <p className="text-muted-foreground text-xs text-center py-8">No messages yet. Say hello! 👋</p>
-        )}
-        {messages.map(msg => {
-          const isMine = msg.sender_id === user?.id;
-          return (
-            <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[75%] px-3 py-2 rounded-2xl text-sm ${
-                  isMine
-                    ? 'bg-primary text-primary-foreground rounded-br-md'
-                    : 'bg-muted text-foreground rounded-bl-md'
-                }`}
-              >
-                {msg.content}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <ChatMessages messages={messages} userId={user?.id} scrollRef={scrollRef} />
+
 
       {/* Input */}
       <form onSubmit={handleSend} className="p-3 border-t border-border flex items-center gap-1">
