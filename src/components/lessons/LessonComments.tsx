@@ -36,9 +36,6 @@ const LessonComments = ({ lessonId, lessonTitle, open, onOpenChange }: LessonCom
   const [newComment, setNewComment] = useState('');
   const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
-  const commentIds = useMemo(() => (comments || []).map(c => c.id), [comments]);
-  const { getGrouped: getCommentReactions, toggleReaction: toggleCommentReaction } = useReactions('comment', commentIds);
-
   const { data: comments = [] } = useQuery({
     queryKey: ['lesson-comments', lessonId],
     queryFn: async () => {
