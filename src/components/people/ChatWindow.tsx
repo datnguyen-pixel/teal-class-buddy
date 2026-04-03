@@ -7,6 +7,9 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, Send } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
+import ReactionPicker from '@/components/ui/reaction-picker';
+import ReactionDisplay from '@/components/ui/reaction-display';
+import { useReactions } from '@/hooks/useReactions';
 
 interface ChatPartner {
   user_id: string;
