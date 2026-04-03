@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Trash2, Reply, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import ReactionPicker from '@/components/ui/reaction-picker';
+import ReactionDisplay from '@/components/ui/reaction-display';
+import { useReactions } from '@/hooks/useReactions';
 
 interface LessonCommentsProps {
   lessonId: number;
@@ -60,6 +63,9 @@ const LessonComments = ({ lessonId, lessonTitle, open, onOpenChange }: LessonCom
     },
     enabled: open,
   });
+
+  const commentIds = useMemo(() => comments.map(c => c.id), [comments]);
+  const { getGrouped: getCommentReactions, toggleReaction: toggleCommentReaction } = useReactions('comment', commentIds);
 
   const topLevel = comments.filter(c => !c.parent_id);
   const replies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
@@ -145,36 +151,49 @@ const LessonComments = ({ lessonId, lessonTitle, open, onOpenChange }: LessonCom
 
   const canDelete = (comment: Comment) => isTeacher || comment.user_id === user?.id;
 
-  const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => (
-    <div className={`flex gap-2 ${isReply ? 'ml-8' : ''}`}>
-      <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-        {comment.profile?.avatar_url ? (
-          <img src={comment.profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
-        ) : (
-          comment.profile?.full_name?.charAt(0) || '?'
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="bg-muted/50 rounded-lg px-3 py-2">
-          <p className="text-xs font-semibold">{comment.profile?.full_name}</p>
-          <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
-        </div>
-        <div className="flex items-center gap-3 mt-0.5 px-1">
-          <span className="text-[10px] text-muted-foreground">{format(new Date(comment.created_at), 'dd/MM HH:mm')}</span>
-          {!isReply && (
-            <button onClick={() => setReplyTo(comment)} className="text-[10px] text-primary hover:underline flex items-center gap-0.5">
-              <Reply className="w-3 h-3" /> Trả lời
-            </button>
-          )}
-          {canDelete(comment) && (
-            <button onClick={() => deleteCommentMutation.mutate(comment.id)} className="text-[10px] text-destructive hover:underline flex items-center gap-0.5">
-              <Trash2 className="w-3 h-3" /> Xoá
-            </button>
+  const CommentItem = ({ comment, isReply = false }: { comment: Comment; isReply?: boolean }) => {
+    const grouped = getCommentReactions(comment.id);
+    return (
+      <div className={`flex gap-2 ${isReply ? 'ml-8' : ''} group`}>
+        <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
+          {comment.profile?.avatar_url ? (
+            <img src={comment.profile.avatar_url} alt="" className="w-7 h-7 rounded-full object-cover" />
+          ) : (
+            comment.profile?.full_name?.charAt(0) || '?'
           )}
         </div>
+        <div className="flex-1 min-w-0">
+          <div className="bg-muted/50 rounded-lg px-3 py-2 relative">
+            <p className="text-xs font-semibold">{comment.profile?.full_name}</p>
+            <p className="text-sm whitespace-pre-wrap break-words">{comment.content}</p>
+            {/* Reaction picker on hover */}
+            <div className="absolute -bottom-3 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              <ReactionPicker onReact={(emoji) => toggleCommentReaction.mutate({ targetId: comment.id, emoji })} />
+            </div>
+          </div>
+          {/* Reaction display */}
+          <ReactionDisplay
+            reactions={grouped}
+            onToggle={(emoji) => toggleCommentReaction.mutate({ targetId: comment.id, emoji })}
+            className="mt-1 px-1"
+          />
+          <div className="flex items-center gap-3 mt-0.5 px-1">
+            <span className="text-[10px] text-muted-foreground">{format(new Date(comment.created_at), 'dd/MM HH:mm')}</span>
+            {!isReply && (
+              <button onClick={() => setReplyTo(comment)} className="text-[10px] text-primary hover:underline flex items-center gap-0.5">
+                <Reply className="w-3 h-3" /> Trả lời
+              </button>
+            )}
+            {canDelete(comment) && (
+              <button onClick={() => deleteCommentMutation.mutate(comment.id)} className="text-[10px] text-destructive hover:underline flex items-center gap-0.5">
+                <Trash2 className="w-3 h-3" /> Xoá
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
