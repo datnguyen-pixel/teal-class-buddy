@@ -3,11 +3,29 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap, Brain, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NotificationBell from '@/components/NotificationBell';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const AppSidebar = () => {
   const { user, signOut, isTeacher } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { data: unreadChatCount = 0 } = useQuery({
+    queryKey: ['unread-chat-total'],
+    queryFn: async () => {
+      if (!user) return 0;
+      const { count, error } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('receiver_id', user.id)
+        .eq('read', false);
+      if (error) return 0;
+      return count || 0;
+    },
+    enabled: !!user,
+    refetchInterval: 5000,
+  });
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -17,8 +35,6 @@ const AppSidebar = () => {
     { icon: Users, label: 'People', path: '/people' },
     { icon: User, label: 'Profile', path: '/profile' },
   ];
-
-  // Notification bell is rendered separately after profile nav item
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 gradient-hero flex flex-col z-50">
@@ -37,12 +53,13 @@ const AppSidebar = () => {
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map(item => {
           const isActive = location.pathname === item.path;
+          const showBadge = item.path === '/people' && unreadChatCount > 0;
           return (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
               className={cn(
-                'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                'relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
                 isActive
                   ? 'bg-sidebar-accent text-sidebar-primary'
                   : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
@@ -50,6 +67,11 @@ const AppSidebar = () => {
             >
               <item.icon className="w-5 h-5" />
               {item.label}
+              {showBadge && (
+                <span className="absolute top-2 left-7 w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-bold">
+                  {unreadChatCount > 9 ? '9+' : unreadChatCount}
+                </span>
+              )}
             </button>
           );
         })}
