@@ -76,7 +76,7 @@ const GradeRow = ({ sub, studentName, assignmentType, onGrade }: GradeRowProps) 
       )}
 
       {sub.feedback && (
-        <p className="text-xs italic text-muted-foreground">Feedback: {sub.feedback}</p>
+        <p className="text-xs italic text-muted-foreground whitespace-pre-wrap break-words">Feedback: {sub.feedback}</p>
       )}
 
       {editing && (
