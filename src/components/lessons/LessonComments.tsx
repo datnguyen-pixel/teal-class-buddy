@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -9,6 +9,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, Trash2, Reply, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import ReactionPicker from '@/components/ui/reaction-picker';
+import ReactionDisplay from '@/components/ui/reaction-display';
+import { useReactions } from '@/hooks/useReactions';
 
 interface LessonCommentsProps {
   lessonId: number;
