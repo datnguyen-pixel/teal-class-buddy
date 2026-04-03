@@ -304,9 +304,10 @@ const Assignments = () => {
                           </span>
                         )}
                         {!isTeacher && mySubmission && mySubmission.feedback && (
-                          <span className="text-xs text-muted-foreground max-w-[200px] truncate" title={mySubmission.feedback}>
-                            {mySubmission.feedback}
-                          </span>
+                          <div className="mt-2 p-3 rounded-lg bg-muted/50 border border-border">
+                            <p className="text-xs font-medium text-muted-foreground mb-1">Feedback:</p>
+                            <p className="text-sm whitespace-pre-wrap break-words">{mySubmission.feedback}</p>
+                          </div>
                         )}
 
                         {isTeacher && (
