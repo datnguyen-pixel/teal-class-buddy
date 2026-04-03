@@ -194,7 +194,6 @@ const LessonComments = ({ lessonId, lessonTitle, open, onOpenChange }: LessonCom
       </div>
     );
   };
-  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
