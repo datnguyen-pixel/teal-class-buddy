@@ -144,14 +144,15 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-3 border-t border-border flex gap-2">
+      <form onSubmit={handleSend} className="p-3 border-t border-border flex items-center gap-1">
         <Input
           value={message}
           onChange={e => setMessage(e.target.value)}
           placeholder="Type a message..."
           className="flex-1 h-9 text-sm"
         />
-        <Button type="submit" size="icon" className="h-9 w-9 gradient-primary border-0" disabled={sendMutation.isPending}>
+        <EmojiPicker onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)} />
+        <Button type="submit" size="icon" className="h-9 w-9 gradient-primary border-0 shrink-0" disabled={sendMutation.isPending}>
           <Send className="w-4 h-4" />
         </Button>
       </form>
