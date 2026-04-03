@@ -80,12 +80,25 @@ const GradeRow = ({ sub, studentName, assignmentType, onGrade }: GradeRowProps) 
       )}
 
       {editing && (
-        <div className="flex gap-2 items-end">
-          <div className="flex-1 space-y-1">
-            <Input placeholder="Grade (0-100)" value={gradeVal} onChange={e => setGradeVal(e.target.value)} type="number" min={0} max={100} />
+        <div className="space-y-2">
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1">
+              <Input placeholder="Grade (0-100)" value={gradeVal} onChange={e => setGradeVal(e.target.value)} type="number" min={0} max={100} />
+            </div>
           </div>
-          <div className="flex-1 space-y-1">
-            <Input placeholder="Feedback" value={feedbackVal} onChange={e => setFeedbackVal(e.target.value)} />
+          <div className="space-y-1">
+            <div className="relative">
+              <Textarea
+                placeholder="Feedback (Shift+Enter for new line)"
+                value={feedbackVal}
+                onChange={e => setFeedbackVal(e.target.value)}
+                rows={3}
+                className="pr-10"
+              />
+              <div className="absolute bottom-2 right-2">
+                <EmojiPicker onEmojiSelect={(emoji) => setFeedbackVal(prev => prev + emoji)} />
+              </div>
+            </div>
           </div>
           <Button size="sm" onClick={() => {
             const g = parseInt(gradeVal);
