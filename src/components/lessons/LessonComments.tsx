@@ -64,6 +64,9 @@ const LessonComments = ({ lessonId, lessonTitle, open, onOpenChange }: LessonCom
     enabled: open,
   });
 
+  const commentIds = useMemo(() => comments.map(c => c.id), [comments]);
+  const { getGrouped: getCommentReactions, toggleReaction: toggleCommentReaction } = useReactions('comment', commentIds);
+
   const topLevel = comments.filter(c => !c.parent_id);
   const replies = (parentId: string) => comments.filter(c => c.parent_id === parentId);
 
