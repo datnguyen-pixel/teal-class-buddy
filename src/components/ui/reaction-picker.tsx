@@ -51,24 +51,18 @@ const ReactionPicker = ({ onReact, className }: ReactionPickerProps) => {
         👍
       </button>
 
-      {/* Reaction panel */}
+      {/* Reaction panel - uses fixed positioning to avoid clipping by overflow:hidden parents */}
       {visible && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 flex items-center gap-0.5 bg-background border border-border rounded-full px-2 py-1 shadow-xl z-[100] animate-reaction-panel whitespace-nowrap">
-          {REACTIONS.map(r => (
-            <button
-              key={r.emoji}
-              type="button"
-              title={r.label}
-              onClick={() => {
-                onReact(r.emoji);
-                setVisible(false);
-              }}
-              className="w-8 h-8 flex items-center justify-center text-lg rounded-full hover:bg-muted transition-all duration-150 hover:scale-[1.35] origin-bottom"
-            >
-              {r.emoji}
-            </button>
-          ))}
-        </div>
+        <ReactionPanel
+          reactions={REACTIONS}
+          onReact={(emoji) => {
+            onReact(emoji);
+            setVisible(false);
+          }}
+          triggerRef={triggerRef}
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+        />
       )}
     </div>
   );
