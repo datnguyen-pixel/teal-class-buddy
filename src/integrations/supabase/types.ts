@@ -291,6 +291,65 @@ export type Database = {
           },
         ]
       }
+      spelling_games: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      spelling_items: {
+        Row: {
+          created_at: string
+          english_word: string
+          game_id: string
+          id: string
+          sort_order: number
+          vietnamese_text: string
+        }
+        Insert: {
+          created_at?: string
+          english_word: string
+          game_id: string
+          id?: string
+          sort_order?: number
+          vietnamese_text: string
+        }
+        Update: {
+          created_at?: string
+          english_word?: string
+          game_id?: string
+          id?: string
+          sort_order?: number
+          vietnamese_text?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spelling_items_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "spelling_games"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       submissions: {
         Row: {
           assignment_id: string
