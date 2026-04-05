@@ -3,9 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brain, Gamepad2, ArrowLeft } from 'lucide-react';
+import { Brain, Gamepad2, ArrowLeft, SpellCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import VocabGameList from '@/components/brain-gym/VocabGameList';
+import SpellingGameList from '@/components/brain-gym/SpellingGameList';
 
 const BrainGym = () => {
   const { isTeacher } = useAuth();
@@ -48,6 +49,25 @@ const BrainGym = () => {
     );
   }
 
+  if (activeModule === 'spelling') {
+    return (
+      <AppLayout>
+        <div className="space-y-6">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => setActiveModule(null)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Spelling Challenge</h1>
+              <p className="text-muted-foreground text-sm">Practice spelling English words from Vietnamese meanings</p>
+            </div>
+          </div>
+          <SpellingGameList />
+        </div>
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -71,6 +91,21 @@ const BrainGym = () => {
                 </div>
                 <h3 className="text-lg font-semibold text-foreground">Vocabulary</h3>
                 <p className="text-sm text-muted-foreground">Match images with the correct English words</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/40"
+              onClick={() => setActiveModule('spelling')}
+            >
+              <CardContent className="p-6 text-center space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <SpellCheck className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Spelling Challenge</h3>
+                <p className="text-sm text-muted-foreground">Spell English words from Vietnamese meanings</p>
               </CardContent>
             </Card>
           </motion.div>
