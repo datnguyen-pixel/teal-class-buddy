@@ -106,7 +106,7 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
           <Button><Plus className="w-4 h-4 mr-2" /> New Spelling Challenge</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{editGame ? 'Edit' : 'Create'} Spelling Challenge</DialogTitle>
         </DialogHeader>
