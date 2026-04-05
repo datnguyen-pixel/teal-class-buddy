@@ -94,6 +94,21 @@ const BrainGym = () => {
               </CardContent>
             </Card>
           </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+            <Card
+              className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-primary/40"
+              onClick={() => setActiveModule('spelling')}
+            >
+              <CardContent className="p-6 text-center space-y-3">
+                <div className="w-16 h-16 mx-auto rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <SpellCheck className="w-8 h-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">Spelling Challenge</h3>
+                <p className="text-sm text-muted-foreground">Spell English words from Vietnamese meanings</p>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </AppLayout>
