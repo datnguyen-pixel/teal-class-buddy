@@ -3,9 +3,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/AppLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Brain, Gamepad2, ArrowLeft } from 'lucide-react';
+import { Brain, Gamepad2, ArrowLeft, SpellCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import VocabGameList from '@/components/brain-gym/VocabGameList';
+import SpellingGameList from '@/components/brain-gym/SpellingGameList';
 
 const BrainGym = () => {
   const { isTeacher } = useAuth();
