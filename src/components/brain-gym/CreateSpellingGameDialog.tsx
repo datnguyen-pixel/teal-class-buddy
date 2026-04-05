@@ -106,7 +106,7 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
           <Button><Plus className="w-4 h-4 mr-2" /> New Spelling Challenge</Button>
         )}
       </DialogTrigger>
-      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{editGame ? 'Edit' : 'Create'} Spelling Challenge</DialogTitle>
         </DialogHeader>
@@ -116,7 +116,7 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Unit 5 Spelling" />
           </div>
 
-          <ScrollArea className="flex-1 min-h-0 max-h-[50vh] pr-2">
+          <ScrollArea className="flex-1 min-h-0 pr-2" style={{ maxHeight: 'calc(90vh - 220px)' }}>
             <div className="space-y-3">
               {items.map((item, i) => (
                 <div key={i} className="border border-border rounded-lg p-3 space-y-2 bg-muted/30">
