@@ -6,7 +6,11 @@ import NotificationBell from '@/components/NotificationBell';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
-const AppSidebar = () => {
+interface AppSidebarProps {
+  onNavigate?: () => void;
+}
+
+const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const { user, signOut, isTeacher } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -36,8 +40,16 @@ const AppSidebar = () => {
     { icon: User, label: 'Profile', path: '/profile' },
   ];
 
+  const handleNav = (path: string) => {
+    navigate(path);
+    onNavigate?.();
+  };
+
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 gradient-hero flex flex-col z-50">
+    <aside className={cn(
+      "h-screen gradient-hero flex flex-col",
+      onNavigate ? "w-full" : "fixed left-0 top-0 w-64 z-50"
+    )}>
       <div className="p-6 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
@@ -57,7 +69,7 @@ const AppSidebar = () => {
           return (
             <button
               key={item.path}
-              onClick={() => navigate(item.path)}
+              onClick={() => handleNav(item.path)}
               className={cn(
                 'relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
                 isActive
@@ -75,7 +87,7 @@ const AppSidebar = () => {
             </button>
           );
         })}
-        <NotificationBell />
+        <NotificationBell onNavigate={onNavigate} />
       </nav>
 
       <div className="p-4 border-t border-sidebar-border">
@@ -93,7 +105,7 @@ const AppSidebar = () => {
           </div>
         </div>
         <button
-          onClick={async () => { await signOut(); navigate('/'); }}
+          onClick={async () => { await signOut(); navigate('/'); onNavigate?.(); }}
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-all"
         >
           <LogOut className="w-4 h-4" />

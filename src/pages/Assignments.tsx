@@ -154,9 +154,9 @@ const Assignments = () => {
   return (
     <AppLayout>
       <motion.div variants={container} initial="hidden" animate="show">
-        <motion.div variants={item} className="flex items-center justify-between mb-8">
+        <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Assignments</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Assignments</h1>
             <p className="text-muted-foreground mt-1">
               {isTeacher ? 'Create and manage class assignments' : 'View and submit assignments'}
             </p>
@@ -183,7 +183,7 @@ const Assignments = () => {
               <motion.div key={assignment.id} variants={item}>
                 <Card className="shadow-card hover:shadow-elevated transition-all duration-300">
                   <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <h3 className="font-semibold text-lg">{assignment.title}</h3>
@@ -212,7 +212,7 @@ const Assignments = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex flex-wrap items-center gap-2 sm:ml-4">
                         {/* Student submit button */}
                         {!isTeacher && !mySubmission && !isPastDue && (
                           <Dialog open={submitDialogId === assignment.id} onOpenChange={(o) => {

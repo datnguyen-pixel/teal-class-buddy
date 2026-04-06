@@ -5,7 +5,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const NotificationBell = () => {
+interface NotificationBellProps {
+  onNavigate?: () => void;
+}
+
+const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,7 +33,7 @@ const NotificationBell = () => {
 
   return (
     <button
-      onClick={() => navigate('/notifications')}
+      onClick={() => { navigate('/notifications'); onNavigate?.(); }}
       className={cn(
         'relative w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
         isActive
