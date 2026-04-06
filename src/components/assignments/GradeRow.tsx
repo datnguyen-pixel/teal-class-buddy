@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Play, Pause } from 'lucide-react';
+import { Play, Pause, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import EmojiPicker from '@/components/ui/emoji-picker';
 
@@ -55,7 +55,14 @@ const GradeRow = ({ sub, studentName, assignmentType, onGrade }: GradeRowProps) 
           <span className="text-muted-foreground ml-2">• {new Date(sub.submitted_at).toLocaleDateString()}</span>
         </div>
         {sub.grade !== null ? (
-          <span className="text-sm font-semibold text-primary">{sub.grade}/100</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold text-primary">{sub.grade}/100</span>
+            {!isAutoGraded && (
+              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setEditing(!editing)}>
+                <Pencil className="w-3.5 h-3.5" />
+              </Button>
+            )}
+          </div>
         ) : !isAutoGraded ? (
           <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>Grade</Button>
         ) : null}
