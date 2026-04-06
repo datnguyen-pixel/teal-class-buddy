@@ -200,10 +200,10 @@ const Lessons = () => {
   return (
     <AppLayout>
       <div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
           <div>
-            <h1 className="text-3xl font-bold">Bài giảng</h1>
-            <p className="text-muted-foreground mt-1">Duyệt tất cả 100 bài giảng</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Bài giảng</h1>
+            <p className="text-muted-foreground mt-1 text-sm">Duyệt tất cả 100 bài giảng</p>
           </div>
         </div>
 

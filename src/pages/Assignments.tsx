@@ -156,7 +156,7 @@ const Assignments = () => {
       <motion.div variants={container} initial="hidden" animate="show">
         <motion.div variants={item} className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Assignments</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Assignments</h1>
             <p className="text-muted-foreground mt-1">
               {isTeacher ? 'Create and manage class assignments' : 'View and submit assignments'}
             </p>

@@ -133,7 +133,7 @@ const People = () => {
     <AppLayout>
       <motion.div variants={container} initial="hidden" animate="show">
         <motion.div variants={item} className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground">People</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">People</h1>
           <p className="text-muted-foreground mt-1">View and connect with everyone in your classroom</p>
         </motion.div>
 
