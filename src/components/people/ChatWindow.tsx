@@ -111,7 +111,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 w-80 sm:w-96 h-[28rem] bg-card border border-border rounded-2xl shadow-elevated flex flex-col z-50 overflow-hidden">
+    <div className="fixed bottom-0 right-0 w-full sm:bottom-4 sm:right-4 sm:w-96 h-[100dvh] sm:h-[28rem] bg-card border border-border sm:rounded-2xl shadow-elevated flex flex-col z-50 overflow-hidden">
       {/* Header */}
       <div className="flex items-center gap-3 p-4 border-b border-border bg-secondary/30">
         <Avatar className="h-8 w-8">
