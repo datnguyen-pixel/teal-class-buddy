@@ -299,9 +299,14 @@ const Assignments = () => {
 
                         {/* Student result badge */}
                         {!isTeacher && mySubmission && (
-                          <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-secondary-foreground">
-                            {mySubmission.grade !== null ? `${mySubmission.grade}/100` : 'Submitted ✓'}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium px-3 py-1 rounded-full bg-secondary text-secondary-foreground">
+                              {mySubmission.grade !== null ? `${mySubmission.grade}/100` : 'Submitted ✓'}
+                            </span>
+                            {mySubmission.graded_at && mySubmission.grade !== null && new Date(mySubmission.graded_at).getTime() > new Date(mySubmission.submitted_at).getTime() + 1000 && (
+                              <span className="text-[10px] text-muted-foreground italic">Updated</span>
+                            )}
+                          </div>
                         )}
                         {!isTeacher && mySubmission && mySubmission.feedback && (
                           <div className="mt-2 p-3 rounded-lg bg-muted/50 border border-border">
