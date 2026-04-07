@@ -125,8 +125,6 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
               <Shuffle className="w-4 h-4 text-muted-foreground" />
               <Label>Random Question Order</Label>
             </div>
-            <Switch checked={randomOrder} onCheckedChange={setRandomOrder} />
-          </div>
           </div>
 
           <ScrollArea type="always" className="flex-1 h-0 min-h-0 pr-3">
