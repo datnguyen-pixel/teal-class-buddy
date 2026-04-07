@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Plus, Upload, X, Loader2, Pencil, Type } from 'lucide-react';
+import { Plus, Upload, X, Loader2, Pencil, Type, Shuffle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -38,6 +39,7 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [timePerQuestion, setTimePerQuestion] = useState(10);
+  const [randomOrder, setRandomOrder] = useState(false);
   const [items, setItems] = useState<VocabItemDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const isEdit = !!editGame;
@@ -45,6 +47,7 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
   const resetForm = () => {
     setTitle('');
     setTimePerQuestion(10);
+    setRandomOrder(false);
     setItems([]);
   };
 
@@ -53,6 +56,7 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
     if (open && editGame) {
       setTitle(editGame.title);
       setTimePerQuestion(editGame.time_per_question);
+      setRandomOrder((editGame as any).random_order ?? false);
       setItems(editGame.items.map(item => ({
         id: item.id,
         type: item.question_text ? 'text' as const : 'image' as const,
@@ -101,7 +105,7 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
         // Update game metadata
         const { error: gameErr } = await supabase
           .from('vocab_games')
-          .update({ title: title.trim(), time_per_question: timePerQuestion })
+          .update({ title: title.trim(), time_per_question: timePerQuestion, random_order: randomOrder })
           .eq('id', editGame.id);
         if (gameErr) throw gameErr;
 
@@ -139,7 +143,7 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
         // Create game
         const { data: game, error: gameErr } = await supabase
           .from('vocab_games')
-          .insert({ title: title.trim(), time_per_question: timePerQuestion, created_by: user!.id })
+          .insert({ title: title.trim(), time_per_question: timePerQuestion, random_order: randomOrder, created_by: user!.id })
           .select()
           .single();
         if (gameErr) throw gameErr;
@@ -200,6 +204,14 @@ const CreateVocabGameDialog = ({ editGame, trigger }: Props) => {
           <div className="space-y-2">
             <Label>Time per Question (seconds)</Label>
             <Input type="number" min={5} max={60} value={timePerQuestion} onChange={e => setTimePerQuestion(Number(e.target.value))} />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shuffle className="w-4 h-4 text-muted-foreground" />
+              <Label>Random Question Order</Label>
+            </div>
+            <Switch checked={randomOrder} onCheckedChange={setRandomOrder} />
           </div>
 
           <div className="space-y-3">
