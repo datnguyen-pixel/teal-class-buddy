@@ -66,6 +66,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
   const [finished, setFinished] = useState(false);
   const [letterOptions, setLetterOptions] = useState<string[]>([]);
   const [wordComplete, setWordComplete] = useState(false);
+  const [playItems, setPlayItems] = useState<SpellingItem[]>([]);
 
   const { data: game } = useQuery({
     queryKey: ['spelling-game', gameId],
@@ -85,7 +86,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
     },
   });
 
-  const currentItem = items[currentIndex];
+  const currentItem = playItems[currentIndex];
   const word = currentItem?.english_word.toLowerCase() || '';
 
   useEffect(() => {
@@ -110,7 +111,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
           setScore(s => s + 1);
         }
         setTimeout(() => {
-          if (currentIndex + 1 < items.length) {
+          if (currentIndex + 1 < playItems.length) {
             setCurrentIndex(i => i + 1);
             setLetterIndex(0);
             setFilledLetters([]);
@@ -129,7 +130,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
       setMadeMistake(true);
       setWrongLetter(letter);
     }
-  }, [word, letterIndex, filledLetters, madeMistake, currentIndex, items.length, wordComplete]);
+  }, [word, letterIndex, filledLetters, madeMistake, currentIndex, playItems.length, wordComplete]);
 
   const startGame = () => {
     setStarted(true);
@@ -141,9 +142,10 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
     setScore(0);
     setFinished(false);
     setWordComplete(false);
+    setPlayItems(game?.random_order ? shuffle(items) : items);
   };
 
-  if (!game || items.length === 0) {
+  if (!game || items.length === 0 || (!started && playItems.length === 0 && items.length > 0)) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">Loading...</p>
@@ -152,7 +154,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
   }
 
   if (finished) {
-    const pct = Math.round((score / items.length) * 100);
+    const pct = Math.round((score / playItems.length) * 100);
     return (
       <div className="flex flex-col items-center justify-center py-12 space-y-6">
         <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring' }}>
@@ -162,7 +164,7 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
         </motion.div>
         <div className="text-center space-y-2">
           <h2 className="text-2xl font-bold text-foreground">Game Complete!</h2>
-          <p className="text-lg text-muted-foreground">{score} / {items.length} words spelled correctly ({pct}%)</p>
+          <p className="text-lg text-muted-foreground">{score} / {playItems.length} words spelled correctly ({pct}%)</p>
         </div>
         <div className="flex gap-3">
           <Button variant="outline" onClick={onBack}><ArrowLeft className="w-4 h-4 mr-1" /> Back</Button>
@@ -189,11 +191,11 @@ const SpellingGamePlay = ({ gameId, onBack }: Props) => {
     <div className="max-w-xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="icon" onClick={onBack}><ArrowLeft className="w-5 h-5" /></Button>
-        <span className="text-sm text-muted-foreground font-medium">{currentIndex + 1} / {items.length}</span>
+        <span className="text-sm text-muted-foreground font-medium">{currentIndex + 1} / {playItems.length}</span>
         <span className="text-sm font-semibold text-primary">Score: {score}</span>
       </div>
 
-      <Progress value={((currentIndex) / items.length) * 100} className="h-2" />
+      <Progress value={((currentIndex) / playItems.length) * 100} className="h-2" />
 
       <AnimatePresence mode="wait">
         <motion.div key={currentIndex} initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }} transition={{ duration: 0.25 }}>

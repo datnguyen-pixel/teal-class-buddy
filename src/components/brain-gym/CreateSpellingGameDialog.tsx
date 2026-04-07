@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Trash2, Type } from 'lucide-react';
+import { Plus, Trash2, Type, Shuffle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -33,15 +34,18 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [title, setTitle] = useState('');
+  const [randomOrder, setRandomOrder] = useState(false);
   const [items, setItems] = useState<SpellingItemDraft[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open && editGame) {
       setTitle(editGame.title);
+      setRandomOrder((editGame as any).random_order ?? false);
       setItems(editGame.items.map(i => ({ id: i.id, vietnameseText: i.vietnamese_text, englishWord: i.english_word })));
     } else if (open) {
       setTitle('');
+      setRandomOrder(false);
       setItems([]);
     }
   }, [open, editGame]);
@@ -70,11 +74,11 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
       let gameId = editGame?.id;
 
       if (editGame) {
-        const { error } = await supabase.from('spelling_games').update({ title: title.trim() }).eq('id', editGame.id);
+        const { error } = await supabase.from('spelling_games').update({ title: title.trim(), random_order: randomOrder }).eq('id', editGame.id);
         if (error) throw error;
         await supabase.from('spelling_items').delete().eq('game_id', editGame.id);
       } else {
-        const { data, error } = await supabase.from('spelling_games').insert({ title: title.trim(), created_by: user!.id }).select('id').single();
+        const { data, error } = await supabase.from('spelling_games').insert({ title: title.trim(), random_order: randomOrder, created_by: user!.id }).select('id').single();
         if (error) throw error;
         gameId = data.id;
       }
@@ -114,6 +118,13 @@ const CreateSpellingGameDialog = ({ editGame, trigger }: Props) => {
           <div>
             <Label>Game Title</Label>
             <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Unit 5 Spelling" />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Shuffle className="w-4 h-4 text-muted-foreground" />
+              <Label>Random Question Order</Label>
+            </div>
           </div>
 
           <ScrollArea type="always" className="flex-1 h-0 min-h-0 pr-3">
