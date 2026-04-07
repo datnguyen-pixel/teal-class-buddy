@@ -296,7 +296,6 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
-          random_order: boolean
           title: string
           updated_at: string
         }
@@ -304,7 +303,6 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
-          random_order?: boolean
           title: string
           updated_at?: string
         }
@@ -312,7 +310,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
-          random_order?: boolean
           title?: string
           updated_at?: string
         }
@@ -420,7 +417,6 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
-          random_order: boolean
           time_per_question: number
           title: string
           updated_at: string
@@ -429,7 +425,6 @@ export type Database = {
           created_at?: string
           created_by: string
           id?: string
-          random_order?: boolean
           time_per_question?: number
           title: string
           updated_at?: string
@@ -438,7 +433,6 @@ export type Database = {
           created_at?: string
           created_by?: string
           id?: string
-          random_order?: boolean
           time_per_question?: number
           title?: string
           updated_at?: string

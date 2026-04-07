@@ -53,15 +53,6 @@ interface Props {
   onBack: () => void;
 }
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
 const VocabGamePlay = ({ gameId, onBack }: Props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answer, setAnswer] = useState('');
@@ -72,7 +63,6 @@ const VocabGamePlay = ({ gameId, onBack }: Props) => {
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [gameFinished, setGameFinished] = useState(false);
-  const [playItems, setPlayItems] = useState<VocabItem[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -95,8 +85,8 @@ const VocabGamePlay = ({ gameId, onBack }: Props) => {
   });
 
   const timePerQ = game?.time_per_question || 10;
-  const currentItem = playItems[currentIndex];
-  const totalQuestions = playItems.length;
+  const currentItem = items[currentIndex];
+  const totalQuestions = items.length;
 
   const moveToNext = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -173,7 +163,6 @@ const VocabGamePlay = ({ gameId, onBack }: Props) => {
     setFeedback(null);
     setGameFinished(false);
     setAnswer('');
-    setPlayItems(game?.random_order ? shuffleArray(items) : items);
   };
 
   // Pre-game screen
