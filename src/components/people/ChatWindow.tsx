@@ -170,12 +170,24 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-3 border-t border-border flex items-center gap-1">
-        <Input
+      <form onSubmit={handleSend} className="p-3 border-t border-border flex items-end gap-1">
+        <Textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 h-9 text-sm"
+          onKeyDown={e => {
+            // Desktop: Enter sends, Shift+Enter inserts newline.
+            // Mobile: virtual keyboards usually fire "Enter" with isComposing
+            // or as a plain insertLineBreak — we only intercept when there's
+            // no shift and it's not an IME composition, on non-touch devices.
+            const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch) {
+              e.preventDefault();
+              handleSend(e as unknown as React.FormEvent);
+            }
+          }}
+          placeholder="Type a message... (Shift+Enter for new line)"
+          rows={1}
+          className="flex-1 min-h-9 max-h-32 text-sm resize-none py-2"
         />
         <EmojiPicker onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)} />
         <Button type="submit" size="icon" className="h-9 w-9 gradient-primary border-0 shrink-0" disabled={sendMutation.isPending}>
