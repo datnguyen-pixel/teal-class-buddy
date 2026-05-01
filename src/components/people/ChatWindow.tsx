@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, Send } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -151,7 +151,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                       : 'bg-muted text-foreground rounded-bl-md'
                   }`}
                 >
-                  {msg.content}
+                  <span className="whitespace-pre-wrap break-words">{msg.content}</span>
                 </div>
                 {/* Reaction picker on hover */}
                 <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} opacity-0 group-hover:opacity-100 transition-opacity`}>
@@ -170,12 +170,24 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSend} className="p-3 border-t border-border flex items-center gap-1">
-        <Input
+      <form onSubmit={handleSend} className="p-3 border-t border-border flex items-end gap-1">
+        <Textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          className="flex-1 h-9 text-sm"
+          onKeyDown={e => {
+            // Desktop: Enter sends, Shift+Enter inserts newline.
+            // Mobile: virtual keyboards usually fire "Enter" with isComposing
+            // or as a plain insertLineBreak — we only intercept when there's
+            // no shift and it's not an IME composition, on non-touch devices.
+            const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch) {
+              e.preventDefault();
+              handleSend(e as unknown as React.FormEvent);
+            }
+          }}
+          placeholder="Type a message... (Shift+Enter for new line)"
+          rows={1}
+          className="flex-1 min-h-9 max-h-32 text-sm resize-none py-2"
         />
         <EmojiPicker onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)} />
         <Button type="submit" size="icon" className="h-9 w-9 gradient-primary border-0 shrink-0" disabled={sendMutation.isPending}>
