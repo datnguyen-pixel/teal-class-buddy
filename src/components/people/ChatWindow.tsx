@@ -151,7 +151,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                       : 'bg-muted text-foreground rounded-bl-md'
                   }`}
                 >
-                  {msg.content}
+                  <span className="whitespace-pre-wrap break-words">{msg.content}</span>
                 </div>
                 {/* Reaction picker on hover */}
                 <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} opacity-0 group-hover:opacity-100 transition-opacity`}>
