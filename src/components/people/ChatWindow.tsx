@@ -185,7 +185,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
               handleSend(e as unknown as React.FormEvent);
             }
           }}
-          placeholder="Type a message... (Shift+Enter for new line)"
+          placeholder=""
           rows={1}
           className="flex-1 min-h-9 max-h-32 text-sm resize-none py-2"
         />
