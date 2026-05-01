@@ -156,27 +156,41 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          image_url: string | null
           read: boolean
           receiver_id: string
+          reply_to_id: string | null
           sender_id: string
         }
         Insert: {
-          content: string
+          content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           read?: boolean
           receiver_id: string
+          reply_to_id?: string | null
           sender_id: string
         }
         Update: {
           content?: string
           created_at?: string
           id?: string
+          image_url?: string | null
           read?: boolean
           receiver_id?: string
+          reply_to_id?: string | null
           sender_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
