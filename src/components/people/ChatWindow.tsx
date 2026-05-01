@@ -4,12 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { X, Send } from 'lucide-react';
+import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
 import ReactionPicker from '@/components/ui/reaction-picker';
 import ReactionDisplay from '@/components/ui/reaction-display';
 import { useReactions } from '@/hooks/useReactions';
+import { toast } from '@/hooks/use-toast';
 
 interface ChatPartner {
   user_id: string;
@@ -22,17 +23,69 @@ interface ChatWindowProps {
   onClose: () => void;
 }
 
+interface ChatMessage {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  read: boolean;
+  created_at: string;
+  image_url?: string | null;
+  reply_to_id?: string | null;
+}
+
+// Compress image client-side to max 1280px and ~0.8 jpeg quality
+const compressImage = (file: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1280;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) {
+          height = Math.round((height * MAX) / width);
+          width = MAX;
+        } else {
+          width = Math.round((width * MAX) / height);
+          height = MAX;
+        }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return reject(new Error('canvas error'));
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('blob error'))),
+        'image/jpeg',
+        0.82
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('image load error'));
+    };
+    img.src = url;
+  });
+};
+
 const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const { user } = useAuth();
   const [message, setMessage] = useState('');
+  const [pendingImage, setPendingImage] = useState<{ file: Blob; preview: string } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [] } = useQuery<ChatMessage[]>({
     queryKey: ['chat-messages', partner.user_id],
     queryFn: async () => {
-      // Fetch the most recent messages first (DESC) so we always get the latest
-      // even past Supabase's default 1000-row cap, then reverse for display.
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -45,10 +98,16 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         console.error('Failed to load chat messages:', error);
         return [];
       }
-      return (data || []).slice().reverse();
+      return ((data as ChatMessage[]) || []).slice().reverse();
     },
     refetchInterval: 3000,
   });
+
+  const messagesById = useMemo(() => {
+    const map = new Map<string, ChatMessage>();
+    messages.forEach(m => map.set(m.id, m));
+    return map;
+  }, [messages]);
 
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
   const { getGrouped, toggleReaction } = useReactions('message', messageIds);
@@ -96,12 +155,14 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   }, [messages]);
 
   const sendMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async (payload: { content: string; image_url?: string | null; reply_to_id?: string | null }) => {
       const { error } = await supabase.from('messages').insert({
         sender_id: user!.id,
         receiver_id: partner.user_id,
-        content,
-      });
+        content: payload.content,
+        image_url: payload.image_url ?? null,
+        reply_to_id: payload.reply_to_id ?? null,
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -109,12 +170,97 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     },
   });
 
-  const handleSend = (e: React.FormEvent) => {
+  const handlePickImage = () => fileInputRef.current?.click();
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Please select an image', variant: 'destructive' });
+      return;
+    }
+    try {
+      const compressed = await compressImage(file);
+      const preview = URL.createObjectURL(compressed);
+      setPendingImage({ file: compressed, preview });
+    } catch {
+      toast({ title: 'Could not process image', variant: 'destructive' });
+    }
+  };
+
+  const uploadImage = async (blob: Blob): Promise<string> => {
+    const path = `${user!.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error } = await supabase.storage.from('chat-images').upload(path, blob, {
+      contentType: 'image/jpeg',
+      cacheControl: '3600',
+    });
+    if (error) throw error;
+    const { data } = supabase.storage.from('chat-images').getPublicUrl(path);
+    return data.publicUrl;
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = message.trim();
-    if (!trimmed) return;
-    sendMutation.mutate(trimmed);
-    setMessage('');
+    if (!trimmed && !pendingImage) return;
+
+    try {
+      let image_url: string | null = null;
+      if (pendingImage) {
+        setUploading(true);
+        image_url = await uploadImage(pendingImage.file);
+        URL.revokeObjectURL(pendingImage.preview);
+      }
+      await sendMutation.mutateAsync({
+        content: trimmed,
+        image_url,
+        reply_to_id: replyTo?.id ?? null,
+      });
+      setMessage('');
+      setPendingImage(null);
+      setReplyTo(null);
+    } catch (err: any) {
+      toast({ title: 'Failed to send', description: err?.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const cancelPendingImage = () => {
+    if (pendingImage) URL.revokeObjectURL(pendingImage.preview);
+    setPendingImage(null);
+  };
+
+  const startLongPress = (msg: ChatMessage) => {
+    if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    longPressTimer.current = setTimeout(() => {
+      setReplyTo(msg);
+    }, 450);
+  };
+  const cancelLongPress = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  };
+
+  const renderReplySnippet = (m: ChatMessage) => {
+    if (!m.reply_to_id) return null;
+    const original = messagesById.get(m.reply_to_id);
+    const senderName =
+      original?.sender_id === user?.id ? 'You' : partner.full_name;
+    const snippet = original
+      ? original.image_url && !original.content
+        ? '📷 Photo'
+        : (original.content || '').slice(0, 80)
+      : 'Original message';
+    return (
+      <div className="mb-1 px-2 py-1 rounded-md bg-background/40 border-l-2 border-primary/60 text-[11px] opacity-80">
+        <p className="font-semibold truncate">{senderName}</p>
+        <p className="truncate">{snippet}</p>
+      </div>
+    );
   };
 
   return (
@@ -145,19 +291,44 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
             <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
               <div className="max-w-[75%] group relative">
                 <div
-                  className={`px-3 py-2 rounded-2xl text-sm ${
+                  onContextMenu={(e) => { e.preventDefault(); setReplyTo(msg); }}
+                  onTouchStart={() => startLongPress(msg)}
+                  onTouchEnd={cancelLongPress}
+                  onTouchMove={cancelLongPress}
+                  onTouchCancel={cancelLongPress}
+                  className={`px-3 py-2 rounded-2xl text-sm select-none ${
                     isMine
                       ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-muted text-foreground rounded-bl-md'
                   }`}
                 >
-                  <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+                  {renderReplySnippet(msg)}
+                  {msg.image_url && (
+                    <a href={msg.image_url} target="_blank" rel="noreferrer" className="block">
+                      <img
+                        src={msg.image_url}
+                        alt="sent"
+                        className="rounded-lg max-h-60 w-auto object-cover mb-1"
+                        loading="lazy"
+                      />
+                    </a>
+                  )}
+                  {msg.content && (
+                    <span className="whitespace-pre-wrap break-words">{msg.content}</span>
+                  )}
                 </div>
-                {/* Reaction picker on hover */}
-                <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                {/* Hover actions (desktop): reply + react */}
+                <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
+                  <button
+                    type="button"
+                    onClick={() => setReplyTo(msg)}
+                    className="bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent"
+                    aria-label="Reply"
+                  >
+                    <Reply className="w-3 h-3" />
+                  </button>
                   <ReactionPicker onReact={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })} />
                 </div>
-                {/* Reaction display */}
                 <ReactionDisplay
                   reactions={grouped}
                   onToggle={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })}
@@ -169,16 +340,65 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         })}
       </div>
 
+      {/* Reply preview */}
+      {replyTo && (
+        <div className="px-3 pt-2 pb-1 border-t border-border bg-secondary/20 flex items-start gap-2">
+          <div className="flex-1 min-w-0 border-l-2 border-primary pl-2">
+            <p className="text-[11px] font-semibold text-muted-foreground">
+              Replying to {replyTo.sender_id === user?.id ? 'yourself' : partner.full_name}
+            </p>
+            <p className="text-xs truncate text-muted-foreground">
+              {replyTo.image_url && !replyTo.content ? '📷 Photo' : replyTo.content}
+            </p>
+          </div>
+          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0" onClick={() => setReplyTo(null)}>
+            <X className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
+
+      {/* Pending image preview */}
+      {pendingImage && (
+        <div className="px-3 pt-2 pb-1 border-t border-border bg-secondary/20 flex items-center gap-2">
+          <div className="relative">
+            <img src={pendingImage.preview} alt="preview" className="h-16 w-16 object-cover rounded-md" />
+            <button
+              type="button"
+              onClick={cancelPendingImage}
+              className="absolute -top-1 -right-1 bg-background border border-border rounded-full p-0.5"
+              aria-label="Remove image"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">Image ready to send</p>
+        </div>
+      )}
+
       {/* Input */}
       <form onSubmit={handleSend} className="p-3 border-t border-border flex items-end gap-1">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-9 w-9 shrink-0"
+          onClick={handlePickImage}
+          disabled={uploading}
+          aria-label="Send image"
+        >
+          <ImageIcon className="w-4 h-4" />
+        </Button>
         <Textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
           onKeyDown={e => {
-            // Desktop: Enter sends, Shift+Enter inserts newline.
-            // Mobile: virtual keyboards usually fire "Enter" with isComposing
-            // or as a plain insertLineBreak — we only intercept when there's
-            // no shift and it's not an IME composition, on non-touch devices.
             const isTouch = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing && !isTouch) {
               e.preventDefault();
@@ -190,8 +410,13 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
           className="flex-1 min-h-9 max-h-32 text-sm resize-none py-2"
         />
         <EmojiPicker onEmojiSelect={(emoji) => setMessage(prev => prev + emoji)} />
-        <Button type="submit" size="icon" className="h-9 w-9 gradient-primary border-0 shrink-0" disabled={sendMutation.isPending}>
-          <Send className="w-4 h-4" />
+        <Button
+          type="submit"
+          size="icon"
+          className="h-9 w-9 gradient-primary border-0 shrink-0"
+          disabled={sendMutation.isPending || uploading}
+        >
+          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </form>
     </div>
