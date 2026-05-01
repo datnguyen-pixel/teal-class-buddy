@@ -31,14 +31,21 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const { data: messages = [] } = useQuery({
     queryKey: ['chat-messages', partner.user_id],
     queryFn: async () => {
-      const { data } = await supabase
+      // Fetch the most recent messages first (DESC) so we always get the latest
+      // even past Supabase's default 1000-row cap, then reverse for display.
+      const { data, error } = await supabase
         .from('messages')
         .select('*')
         .or(
           `and(sender_id.eq.${user!.id},receiver_id.eq.${partner.user_id}),and(sender_id.eq.${partner.user_id},receiver_id.eq.${user!.id})`
         )
-        .order('created_at', { ascending: true });
-      return data || [];
+        .order('created_at', { ascending: false })
+        .limit(2000);
+      if (error) {
+        console.error('Failed to load chat messages:', error);
+        return [];
+      }
+      return (data || []).slice().reverse();
     },
     refetchInterval: 3000,
   });
