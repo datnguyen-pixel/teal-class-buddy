@@ -242,17 +242,18 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
 
   const sendMutation = useMutation({
     mutationFn: async (payload: { content: string; image_url?: string | null; reply_to_id?: string | null }) => {
-      const { error } = await supabase.from('messages').insert({
+      const { data, error } = await supabase.from('messages').insert({
         sender_id: user!.id,
         receiver_id: partner.user_id,
         content: payload.content,
         image_url: payload.image_url ?? null,
         reply_to_id: payload.reply_to_id ?? null,
-      } as any);
+      } as any).select('*').single();
       if (error) throw error;
+      return data as ChatMessage;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat-messages', partner.user_id] });
+    onSuccess: (sentMessage) => {
+      addMessageToCache(sentMessage);
     },
   });
 
