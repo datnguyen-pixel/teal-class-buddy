@@ -340,7 +340,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} onScroll={handleMessagesScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs text-center py-8">No messages yet. Say hello! 👋</p>
         )}
