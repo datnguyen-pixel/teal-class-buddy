@@ -84,26 +84,50 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previousScrollHeight = useRef<number | null>(null);
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
+  const {
+    data: messagePages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['chat-messages', partner.user_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      let query = supabase
         .from('messages')
         .select('*')
         .or(
           `and(sender_id.eq.${user!.id},receiver_id.eq.${partner.user_id}),and(sender_id.eq.${partner.user_id},receiver_id.eq.${user!.id})`
         )
         .order('created_at', { ascending: false })
-        .limit(2000);
+        .limit(CHAT_PAGE_SIZE);
+
+      if (pageParam) {
+        query = query.lt('created_at', pageParam);
+      }
+
+      const { data, error } = await query;
       if (error) {
         console.error('Failed to load chat messages:', error);
         return [];
       }
       return ((data as ChatMessage[]) || []).slice().reverse();
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.length === CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
     refetchInterval: 3000,
   });
+
+  const messages = useMemo(() => {
+    const all = (messagePages?.pages || []).flat();
+    const unique = new Map<string, ChatMessage>();
+    all.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }, [messagePages]);
 
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
