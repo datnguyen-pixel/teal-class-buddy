@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
 import ReactionPicker from '@/components/ui/reaction-picker';
 import ReactionDisplay from '@/components/ui/reaction-display';
@@ -33,6 +34,8 @@ interface ChatMessage {
   image_url?: string | null;
   reply_to_id?: string | null;
 }
+
+const CHAT_PAGE_SIZE = 50;
 
 // Compress image client-side to max 1280px and ~0.8 jpeg quality
 const compressImage = (file: File): Promise<Blob> => {
@@ -82,26 +85,69 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previousScrollHeight = useRef<number | null>(null);
+  const lastMessageId = useRef<string | null>(null);
 
-  const { data: messages = [] } = useQuery<ChatMessage[]>({
+  const {
+    data: messagePages,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
     queryKey: ['chat-messages', partner.user_id],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    initialPageParam: null as string | null,
+    queryFn: async ({ pageParam }) => {
+      let query = supabase
         .from('messages')
         .select('*')
         .or(
           `and(sender_id.eq.${user!.id},receiver_id.eq.${partner.user_id}),and(sender_id.eq.${partner.user_id},receiver_id.eq.${user!.id})`
         )
         .order('created_at', { ascending: false })
-        .limit(2000);
+        .limit(CHAT_PAGE_SIZE);
+
+      if (pageParam) {
+        query = query.lt('created_at', pageParam);
+      }
+
+      const { data, error } = await query;
       if (error) {
         console.error('Failed to load chat messages:', error);
         return [];
       }
       return ((data as ChatMessage[]) || []).slice().reverse();
     },
-    refetchInterval: 3000,
+    getNextPageParam: (lastPage) =>
+      lastPage.length >= CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
   });
+
+  const messages = useMemo(() => {
+    const all = (messagePages?.pages || []).flat();
+    const unique = new Map<string, ChatMessage>();
+    all.forEach(m => unique.set(m.id, m));
+    return Array.from(unique.values()).sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+  }, [messagePages]);
+
+  const addMessageToCache = useCallback((incoming: ChatMessage) => {
+    queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
+      ['chat-messages', partner.user_id],
+      (current) => {
+        if (!current || current.pages.some(page => page.some(m => m.id === incoming.id))) return current;
+        return {
+          ...current,
+          pages: current.pages.map((page, index) => (
+            index === 0
+              ? [...page, incoming].sort(
+                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                )
+              : page
+          )),
+        };
+      }
+    );
+  }, [partner.user_id, queryClient]);
 
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
@@ -112,20 +158,24 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
   const { getGrouped, toggleReaction } = useReactions('message', messageIds);
 
+  const unreadLoadedIds = useMemo(
+    () => messages.filter(m => m.receiver_id === user?.id && !m.read).map(m => m.id).join(','),
+    [messages, user?.id]
+  );
+
   // Mark messages as read
   useEffect(() => {
     if (!user) return;
-    const unread = messages.filter(m => m.receiver_id === user.id && !m.read);
-    if (unread.length > 0) {
-      supabase
-        .from('messages')
-        .update({ read: true })
-        .in('id', unread.map(m => m.id))
-        .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
-        });
-    }
-  }, [messages, user, queryClient]);
+    supabase
+      .from('messages')
+      .update({ read: true })
+      .eq('receiver_id', user.id)
+      .eq('sender_id', partner.user_id)
+      .eq('read', false)
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+      });
+  }, [unreadLoadedIds, partner.user_id, user, queryClient]);
 
   // Realtime subscription
   useEffect(() => {
@@ -141,32 +191,66 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
           (msg.sender_id === user?.id && msg.receiver_id === partner.user_id) ||
           (msg.sender_id === partner.user_id && msg.receiver_id === user?.id)
         ) {
-          queryClient.invalidateQueries({ queryKey: ['chat-messages', partner.user_id] });
+          addMessageToCache(msg as ChatMessage);
           queryClient.invalidateQueries({ queryKey: ['unread-count'] });
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [partner.user_id, user?.id, queryClient]);
+  }, [addMessageToCache, partner.user_id, user?.id, queryClient]);
+
+  const loadOlderMessages = useCallback(() => {
+    if (!scrollRef.current || !hasNextPage || isFetchingNextPage) return;
+    previousScrollHeight.current = scrollRef.current.scrollHeight;
+    fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const handleMessagesScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    if (scrollRef.current.scrollTop <= 80) {
+      loadOlderMessages();
+    }
+  }, [loadOlderMessages]);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const latestMessage = messages[messages.length - 1];
+    const latestId = latestMessage?.id ?? null;
+
+    if (previousScrollHeight.current !== null) {
+      const heightDifference = container.scrollHeight - previousScrollHeight.current;
+      container.scrollTop = heightDifference;
+      previousScrollHeight.current = null;
+    } else if (!lastMessageId.current) {
+      container.scrollTo({ top: container.scrollHeight });
+    } else if (latestId && latestId !== lastMessageId.current) {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const shouldFollow = distanceFromBottom < 160 || latestMessage.sender_id === user?.id;
+      if (shouldFollow) {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    lastMessageId.current = latestId;
+  }, [messages, user?.id]);
 
   const sendMutation = useMutation({
     mutationFn: async (payload: { content: string; image_url?: string | null; reply_to_id?: string | null }) => {
-      const { error } = await supabase.from('messages').insert({
+      const { data, error } = await supabase.from('messages').insert({
         sender_id: user!.id,
         receiver_id: partner.user_id,
         content: payload.content,
         image_url: payload.image_url ?? null,
         reply_to_id: payload.reply_to_id ?? null,
-      } as any);
+      } as any).select('*').single();
       if (error) throw error;
+      return data as ChatMessage;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat-messages', partner.user_id] });
+    onSuccess: (sentMessage) => {
+      addMessageToCache(sentMessage);
     },
   });
 
@@ -280,7 +364,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       </div>
 
       {/* Messages */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div ref={scrollRef} onScroll={handleMessagesScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 && (
           <p className="text-muted-foreground text-xs text-center py-8">No messages yet. Say hello! 👋</p>
         )}
