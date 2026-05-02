@@ -131,6 +131,25 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     );
   }, [messagePages]);
 
+  const addMessageToCache = useCallback((incoming: ChatMessage) => {
+    queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
+      ['chat-messages', partner.user_id],
+      (current) => {
+        if (!current || current.pages.some(page => page.some(m => m.id === incoming.id))) return current;
+        return {
+          ...current,
+          pages: current.pages.map((page, index) => (
+            index === 0
+              ? [...page, incoming].sort(
+                  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                )
+              : page
+          )),
+        };
+      }
+    );
+  }, [partner.user_id, queryClient]);
+
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
     messages.forEach(m => map.set(m.id, m));
