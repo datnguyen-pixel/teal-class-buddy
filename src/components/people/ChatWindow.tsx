@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import type { InfiniteData } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
 import ReactionPicker from '@/components/ui/reaction-picker';
 import ReactionDisplay from '@/components/ui/reaction-display';
@@ -118,8 +119,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       return ((data as ChatMessage[]) || []).slice().reverse();
     },
     getNextPageParam: (lastPage) =>
-      lastPage.length === CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
-    refetchInterval: 3000,
+      lastPage.length >= CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
   });
 
   const messages = useMemo(() => {
