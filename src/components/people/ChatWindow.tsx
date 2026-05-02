@@ -85,6 +85,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousScrollHeight = useRef<number | null>(null);
+  const lastMessageId = useRef<string | null>(null);
 
   const {
     data: messagePages,
@@ -176,9 +177,42 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [partner.user_id, user?.id, queryClient]);
 
+  const loadOlderMessages = useCallback(() => {
+    if (!scrollRef.current || !hasNextPage || isFetchingNextPage) return;
+    previousScrollHeight.current = scrollRef.current.scrollHeight;
+    fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+
+  const handleMessagesScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    if (scrollRef.current.scrollTop <= 80) {
+      loadOlderMessages();
+    }
+  }, [loadOlderMessages]);
+
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
-  }, [messages]);
+    const container = scrollRef.current;
+    if (!container) return;
+
+    const latestMessage = messages[messages.length - 1];
+    const latestId = latestMessage?.id ?? null;
+
+    if (previousScrollHeight.current !== null) {
+      const heightDifference = container.scrollHeight - previousScrollHeight.current;
+      container.scrollTop = heightDifference;
+      previousScrollHeight.current = null;
+    } else if (!lastMessageId.current) {
+      container.scrollTo({ top: container.scrollHeight });
+    } else if (latestId && latestId !== lastMessageId.current) {
+      const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+      const shouldFollow = distanceFromBottom < 160 || latestMessage.sender_id === user?.id;
+      if (shouldFollow) {
+        container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+      }
+    }
+
+    lastMessageId.current = latestId;
+  }, [messages, user?.id]);
 
   const sendMutation = useMutation({
     mutationFn: async (payload: { content: string; image_url?: string | null; reply_to_id?: string | null }) => {
