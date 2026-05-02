@@ -194,14 +194,14 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
           (msg.sender_id === user?.id && msg.receiver_id === partner.user_id) ||
           (msg.sender_id === partner.user_id && msg.receiver_id === user?.id)
         ) {
-          queryClient.invalidateQueries({ queryKey: ['chat-messages', partner.user_id] });
+          addMessageToCache(msg as ChatMessage);
           queryClient.invalidateQueries({ queryKey: ['unread-count'] });
         }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [partner.user_id, user?.id, queryClient]);
+  }, [addMessageToCache, partner.user_id, user?.id, queryClient]);
 
   const loadOlderMessages = useCallback(() => {
     if (!scrollRef.current || !hasNextPage || isFetchingNextPage) return;
