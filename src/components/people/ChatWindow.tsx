@@ -1,11 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
 import ReactionPicker from '@/components/ui/reaction-picker';
 import ReactionDisplay from '@/components/ui/reaction-display';
@@ -33,6 +33,8 @@ interface ChatMessage {
   image_url?: string | null;
   reply_to_id?: string | null;
 }
+
+const CHAT_PAGE_SIZE = 50;
 
 // Compress image client-side to max 1280px and ~0.8 jpeg quality
 const compressImage = (file: File): Promise<Blob> => {
