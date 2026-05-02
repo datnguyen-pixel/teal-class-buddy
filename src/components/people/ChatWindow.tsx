@@ -87,7 +87,6 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previousScrollHeight = useRef<number | null>(null);
   const lastMessageId = useRef<string | null>(null);
-  const readSyncPartner = useRef<string | null>(null);
 
   const {
     data: messagePages,
@@ -159,16 +158,14 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const messageIds = useMemo(() => messages.map(m => m.id), [messages]);
   const { getGrouped, toggleReaction } = useReactions('message', messageIds);
 
-  const hasLoadedUnread = useMemo(
-    () => messages.some(m => m.receiver_id === user?.id && !m.read),
+  const unreadLoadedIds = useMemo(
+    () => messages.filter(m => m.receiver_id === user?.id && !m.read).map(m => m.id).join(','),
     [messages, user?.id]
   );
 
   // Mark messages as read
   useEffect(() => {
     if (!user) return;
-    if (readSyncPartner.current === partner.user_id && !hasLoadedUnread) return;
-    readSyncPartner.current = partner.user_id;
     supabase
       .from('messages')
       .update({ read: true })
@@ -178,7 +175,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
       });
-  }, [hasLoadedUnread, partner.user_id, user, queryClient]);
+  }, [unreadLoadedIds, partner.user_id, user, queryClient]);
 
   // Realtime subscription
   useEffect(() => {
