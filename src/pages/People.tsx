@@ -111,7 +111,7 @@ const People = () => {
         schema: 'public',
         table: 'messages',
       }, () => {
-        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+        queryClient.invalidateQueries({ queryKey: ['chat-previews'] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
