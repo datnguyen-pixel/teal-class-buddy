@@ -180,12 +180,23 @@ const People = () => {
           <p className="text-muted-foreground text-center py-12">No people found</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(person => (
+            {filtered.map(person => {
+              const preview = chatPreviews[person.user_id];
+              const unread = preview?.unread || 0;
+              return (
               <motion.div key={person.user_id} variants={item}>
-                <Card className="shadow-card hover:shadow-elevated transition-shadow duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
+                <Card className={cn(
+                  "shadow-card hover:shadow-elevated transition-all duration-300 cursor-pointer",
+                  unread > 0 && "ring-1 ring-primary/30"
+                )}
+                onClick={() => {
+                  setChatWith(person);
+                  queryClient.invalidateQueries({ queryKey: ['chat-previews'] });
+                  queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
                         <Avatar className="h-12 w-12">
                           {person.avatar_url ? (
                             <AvatarImage src={person.avatar_url} alt={person.full_name} />
@@ -194,41 +205,47 @@ const People = () => {
                             {person.full_name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {(unreadCounts[person.user_id] || 0) > 0 && (
+                        {unread > 0 && (
                           <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
-                            {unreadCounts[person.user_id]}
+                            {unread}
                           </span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{person.full_name}</p>
-                        <Badge
-                          variant={person.role === 'teacher' ? 'default' : 'secondary'}
-                          className="mt-1 text-xs capitalize"
-                        >
-                          {person.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <p className={cn("text-sm truncate flex-1", unread > 0 ? "font-bold" : "font-semibold")}>
+                            {person.full_name}
+                          </p>
+                          {preview?.at && (
+                            <span className={cn("text-[10px] shrink-0", unread > 0 ? "text-primary font-semibold" : "text-muted-foreground")}>
+                              {formatPreviewTime(preview.at)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge
+                            variant={person.role === 'teacher' ? 'default' : 'secondary'}
+                            className="text-[10px] capitalize px-1.5 py-0 h-4"
+                          >
+                            {person.role}
+                          </Badge>
+                          <p className={cn(
+                            "text-xs truncate flex-1",
+                            unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"
+                          )}>
+                            {preview?.last
+                              ? `${preview.mine ? 'You: ' : ''}${preview.last}`
+                              : 'Tap to start chatting'}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 gap-2"
-                        onClick={() => {
-                          setChatWith(person);
-                          queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
-                          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
-                        }}
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        Chat
-                      </Button>
-                      {isTeacher && person.role !== 'teacher' && (
+                    {isTeacher && person.role !== 'teacher' && (
+                      <div className="flex justify-end mt-3" onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive" className="gap-2">
-                              <ShieldX className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" className="gap-2 h-7 text-xs text-destructive hover:text-destructive">
+                              <ShieldX className="w-3.5 h-3.5" />
                               Remove
                             </Button>
                           </AlertDialogTrigger>
