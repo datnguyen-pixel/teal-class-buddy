@@ -72,24 +72,34 @@ const People = () => {
     },
   });
 
-  // Fetch unread message counts per sender
-  const { data: unreadCounts = {} } = useQuery({
-    queryKey: ['unread-per-sender'],
+  // Fetch chat previews (last message + unread per partner)
+  const { data: chatPreviews = {} } = useQuery({
+    queryKey: ['chat-previews'],
     queryFn: async () => {
-      if (!user) return {};
+      if (!user) return {} as Record<string, { last: string; at: string; unread: number; mine: boolean }>;
       const { data } = await supabase
         .from('messages')
-        .select('sender_id')
-        .eq('receiver_id', user.id)
-        .eq('read', false);
-      if (!data) return {};
-      const counts: Record<string, number> = {};
-      data.forEach(m => {
-        counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+        .select('sender_id, receiver_id, content, image_url, read, created_at')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(500);
+      const map: Record<string, { last: string; at: string; unread: number; mine: boolean }> = {};
+      (data || []).forEach((m: any) => {
+        const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        if (!map[partnerId]) {
+          const preview = m.image_url && !m.content ? '📷 Photo' : (m.content || '');
+          map[partnerId] = { last: preview, at: m.created_at, unread: 0, mine: m.sender_id === user.id };
+        }
+        if (m.receiver_id === user.id && !m.read) {
+          map[partnerId].unread = (map[partnerId].unread || 0) + 1;
+        }
       });
-      return counts;
+      return map;
     },
   });
+
+  const unreadCounts: Record<string, number> = {};
+  Object.entries(chatPreviews).forEach(([k, v]) => { if (v.unread) unreadCounts[k] = v.unread; });
 
   // Realtime: refresh unread counts on new messages
   useEffect(() => {
