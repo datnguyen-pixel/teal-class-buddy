@@ -96,25 +96,20 @@ export default {
           },
         },
         "reaction-panel": {
-          "0%": { opacity: "0", transform: "scale(0.8) translateY(4px)" },
-          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
-        },
-        "message-in": {
-          "0%": { opacity: "0", transform: "translateY(6px) scale(0.98)" },
-          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
-        },
-        "reaction-pop": {
-          "0%": { opacity: "0", transform: "scale(0.4)" },
-          "60%": { opacity: "1", transform: "scale(1.25)" },
-          "100%": { opacity: "1", transform: "scale(1)" },
+          "0%": {
+            opacity: "0",
+            transform: "translateX(-50%) scale(0.8)",
+          },
+          "100%": {
+            opacity: "1",
+            transform: "translateX(-50%) scale(1)",
+          },
         },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
-        "reaction-panel": "reaction-panel 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards",
-        "message-in": "message-in 0.22s cubic-bezier(0.16, 1, 0.3, 1)",
-        "reaction-pop": "reaction-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        "reaction-panel": "reaction-panel 0.15s ease-out forwards",
       },
     },
   },
