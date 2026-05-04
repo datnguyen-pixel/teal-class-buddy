@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Search, ShieldX } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -72,24 +73,34 @@ const People = () => {
     },
   });
 
-  // Fetch unread message counts per sender
-  const { data: unreadCounts = {} } = useQuery({
-    queryKey: ['unread-per-sender'],
+  // Fetch chat previews (last message + unread per partner)
+  const { data: chatPreviews = {} } = useQuery({
+    queryKey: ['chat-previews'],
     queryFn: async () => {
-      if (!user) return {};
+      if (!user) return {} as Record<string, { last: string; at: string; unread: number; mine: boolean }>;
       const { data } = await supabase
         .from('messages')
-        .select('sender_id')
-        .eq('receiver_id', user.id)
-        .eq('read', false);
-      if (!data) return {};
-      const counts: Record<string, number> = {};
-      data.forEach(m => {
-        counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+        .select('sender_id, receiver_id, content, image_url, read, created_at')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+        .order('created_at', { ascending: false })
+        .limit(500);
+      const map: Record<string, { last: string; at: string; unread: number; mine: boolean }> = {};
+      (data || []).forEach((m: any) => {
+        const partnerId = m.sender_id === user.id ? m.receiver_id : m.sender_id;
+        if (!map[partnerId]) {
+          const preview = m.image_url && !m.content ? '📷 Photo' : (m.content || '');
+          map[partnerId] = { last: preview, at: m.created_at, unread: 0, mine: m.sender_id === user.id };
+        }
+        if (m.receiver_id === user.id && !m.read) {
+          map[partnerId].unread = (map[partnerId].unread || 0) + 1;
+        }
       });
-      return counts;
+      return map;
     },
   });
+
+  const unreadCounts: Record<string, number> = {};
+  Object.entries(chatPreviews).forEach(([k, v]) => { if (v.unread) unreadCounts[k] = v.unread; });
 
   // Realtime: refresh unread counts on new messages
   useEffect(() => {
@@ -101,7 +112,7 @@ const People = () => {
         schema: 'public',
         table: 'messages',
       }, () => {
-        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+        queryClient.invalidateQueries({ queryKey: ['chat-previews'] });
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -122,9 +133,24 @@ const People = () => {
     onError: () => toast.error('Failed to remove user'),
   });
 
-  const filtered = people.filter(p =>
-    p.full_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const formatPreviewTime = (iso: string) => {
+    const d = new Date(iso); const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60_000) return 'now';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const yest = new Date(now); yest.setDate(now.getDate() - 1);
+    if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const filtered = people
+    .filter(p => p.full_name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      const ta = chatPreviews[a.user_id]?.at ? new Date(chatPreviews[a.user_id].at).getTime() : 0;
+      const tb = chatPreviews[b.user_id]?.at ? new Date(chatPreviews[b.user_id].at).getTime() : 0;
+      return tb - ta;
+    });
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
@@ -155,12 +181,23 @@ const People = () => {
           <p className="text-muted-foreground text-center py-12">No people found</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filtered.map(person => (
+            {filtered.map(person => {
+              const preview = chatPreviews[person.user_id];
+              const unread = preview?.unread || 0;
+              return (
               <motion.div key={person.user_id} variants={item}>
-                <Card className="shadow-card hover:shadow-elevated transition-shadow duration-300">
-                  <CardContent className="p-5">
-                    <div className="flex items-center gap-4">
-                      <div className="relative">
+                <Card className={cn(
+                  "shadow-card hover:shadow-elevated transition-all duration-300 cursor-pointer",
+                  unread > 0 && "ring-1 ring-primary/30"
+                )}
+                onClick={() => {
+                  setChatWith(person);
+                  queryClient.invalidateQueries({ queryKey: ['chat-previews'] });
+                  queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+                }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative shrink-0">
                         <Avatar className="h-12 w-12">
                           {person.avatar_url ? (
                             <AvatarImage src={person.avatar_url} alt={person.full_name} />
@@ -169,41 +206,47 @@ const People = () => {
                             {person.full_name.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        {(unreadCounts[person.user_id] || 0) > 0 && (
+                        {unread > 0 && (
                           <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] font-bold min-w-[18px] h-[18px] rounded-full flex items-center justify-center px-1">
-                            {unreadCounts[person.user_id]}
+                            {unread}
                           </span>
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-sm truncate">{person.full_name}</p>
-                        <Badge
-                          variant={person.role === 'teacher' ? 'default' : 'secondary'}
-                          className="mt-1 text-xs capitalize"
-                        >
-                          {person.role}
-                        </Badge>
+                        <div className="flex items-center gap-2">
+                          <p className={cn("text-sm truncate flex-1", unread > 0 ? "font-bold" : "font-semibold")}>
+                            {person.full_name}
+                          </p>
+                          {preview?.at && (
+                            <span className={cn("text-[10px] shrink-0", unread > 0 ? "text-primary font-semibold" : "text-muted-foreground")}>
+                              {formatPreviewTime(preview.at)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <Badge
+                            variant={person.role === 'teacher' ? 'default' : 'secondary'}
+                            className="text-[10px] capitalize px-1.5 py-0 h-4"
+                          >
+                            {person.role}
+                          </Badge>
+                          <p className={cn(
+                            "text-xs truncate flex-1",
+                            unread > 0 ? "text-foreground font-semibold" : "text-muted-foreground"
+                          )}>
+                            {preview?.last
+                              ? `${preview.mine ? 'You: ' : ''}${preview.last}`
+                              : 'Tap to start chatting'}
+                          </p>
+                        </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 gap-2"
-                        onClick={() => {
-                          setChatWith(person);
-                          queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
-                          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
-                        }}
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        Chat
-                      </Button>
-                      {isTeacher && person.role !== 'teacher' && (
+                    {isTeacher && person.role !== 'teacher' && (
+                      <div className="flex justify-end mt-3" onClick={(e) => e.stopPropagation()}>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>
-                            <Button size="sm" variant="destructive" className="gap-2">
-                              <ShieldX className="w-4 h-4" />
+                            <Button size="sm" variant="ghost" className="gap-2 h-7 text-xs text-destructive hover:text-destructive">
+                              <ShieldX className="w-3.5 h-3.5" />
                               Remove
                             </Button>
                           </AlertDialogTrigger>
@@ -226,12 +269,13 @@ const People = () => {
                             </AlertDialogFooter>
                           </AlertDialogContent>
                         </AlertDialog>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
-            ))}
+              );
+            })}
           </div>
         )}
       </motion.div>
