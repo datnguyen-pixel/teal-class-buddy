@@ -132,9 +132,24 @@ const People = () => {
     onError: () => toast.error('Failed to remove user'),
   });
 
-  const filtered = people.filter(p =>
-    p.full_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const formatPreviewTime = (iso: string) => {
+    const d = new Date(iso); const now = new Date();
+    const diff = now.getTime() - d.getTime();
+    if (diff < 60_000) return 'now';
+    if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
+    if (d.toDateString() === now.toDateString()) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const yest = new Date(now); yest.setDate(now.getDate() - 1);
+    if (d.toDateString() === yest.toDateString()) return 'Yesterday';
+    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  };
+
+  const filtered = people
+    .filter(p => p.full_name.toLowerCase().includes(search.toLowerCase()))
+    .sort((a, b) => {
+      const ta = chatPreviews[a.user_id]?.at ? new Date(chatPreviews[a.user_id].at).getTime() : 0;
+      const tb = chatPreviews[b.user_id]?.at ? new Date(chatPreviews[b.user_id].at).getTime() : 0;
+      return tb - ta;
+    });
 
   const container = { hidden: { opacity: 0 }, show: { opacity: 1, transition: { staggerChildren: 0.05 } } };
   const item = { hidden: { opacity: 0, y: 12 }, show: { opacity: 1, y: 0 } };
