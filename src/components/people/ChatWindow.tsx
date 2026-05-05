@@ -502,6 +502,7 @@ interface MessageRowProps {
   isMine: boolean;
   grouped: { emoji: string; count: number; hasReacted: boolean }[];
   showBar: boolean;
+  boundaryRef?: React.RefObject<HTMLElement>;
   onActivate: () => void;
   onDeactivate: () => void;
   onReply: () => void;
@@ -513,20 +514,35 @@ interface MessageRowProps {
 }
 
 const MessageRow = ({
-  msg, isMine, grouped, showBar, onActivate, onDeactivate, onReply,
+  msg, isMine, grouped, showBar, boundaryRef, onActivate, onDeactivate, onReply,
   onTouchStart, onTouchEnd, onReact, onToggleReaction, renderReplySnippet,
 }: MessageRowProps) => {
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => {
+      onDeactivate();
+    }, 600);
+  };
+
   return (
     <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
       <div
         className="max-w-[75%] group relative"
         data-reaction-zone
-        onMouseLeave={onDeactivate}
       >
         <div
           ref={bubbleRef}
-          onMouseEnter={onActivate}
+          onMouseEnter={() => { cancelClose(); onActivate(); }}
+          onMouseLeave={scheduleClose}
           onContextMenu={(e) => { e.preventDefault(); onReply(); }}
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
@@ -564,9 +580,12 @@ const MessageRow = ({
         {showBar && (
           <ReactionBar
             anchorRef={bubbleRef}
+            boundaryRef={boundaryRef}
             align={isMine ? 'right' : 'left'}
             onReact={onReact}
             onClose={onDeactivate}
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
           />
         )}
         <ReactionDisplay
