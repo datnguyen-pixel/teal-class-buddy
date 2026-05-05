@@ -395,6 +395,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
               isMine={isMine}
               grouped={grouped}
               showBar={showBar}
+              boundaryRef={scrollRef}
               onActivate={() => setActiveReactionMsgId(msg.id)}
               onDeactivate={() => setActiveReactionMsgId(prev => (prev === msg.id ? null : prev))}
               onReply={() => setReplyTo(msg)}
