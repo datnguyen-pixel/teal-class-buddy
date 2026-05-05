@@ -81,6 +81,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const [pendingImage, setPendingImage] = useState<{ file: Blob; preview: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
