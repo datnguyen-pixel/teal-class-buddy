@@ -389,75 +389,24 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
           const grouped = getGrouped(msg.id);
           const showBar = activeReactionMsgId === msg.id;
           return (
-            <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className="max-w-[75%] group relative"
-                data-reaction-zone
-                onMouseLeave={() => setActiveReactionMsgId(prev => (prev === msg.id ? null : prev))}
-              >
-                <div
-                  onMouseEnter={() => setActiveReactionMsgId(msg.id)}
-                  onContextMenu={(e) => { e.preventDefault(); setReplyTo(msg); }}
-                  onTouchStart={() => startLongPress(msg.id)}
-                  onTouchEnd={cancelLongPress}
-                  onTouchMove={cancelLongPress}
-                  onTouchCancel={cancelLongPress}
-                  className={`px-3 py-2 rounded-2xl text-sm select-none ${
-                    isMine
-                      ? 'bg-primary text-primary-foreground rounded-br-md'
-                      : 'bg-muted text-foreground rounded-bl-md'
-                  }`}
-                >
-                  {renderReplySnippet(msg)}
-                  {msg.image_url && (
-                    <a href={msg.image_url} target="_blank" rel="noreferrer" className="block">
-                      <img
-                        src={msg.image_url}
-                        alt="sent"
-                        className="rounded-lg max-h-60 w-auto object-cover mb-1"
-                        loading="lazy"
-                      />
-                    </a>
-                  )}
-                  {msg.content && (
-                    <span className="whitespace-pre-wrap break-words">{msg.content}</span>
-                  )}
-                </div>
-                {/* Reply quick-action on hover (desktop) */}
-                <button
-                  type="button"
-                  onClick={() => setReplyTo(msg)}
-                  className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} hidden group-hover:flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent`}
-                  aria-label="Reply"
-                >
-                  <Reply className="w-3 h-3" />
-                </button>
-                {/* Reaction bar: hover (desktop) or long-press (mobile) */}
-                {showBar && (
-                  <div className={`absolute top-full mt-1 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel flex items-center gap-1`}>
-                    <ReactionBar
-                      onReact={(emoji) => {
-                        toggleReaction.mutate({ targetId: msg.id, emoji });
-                        setActiveReactionMsgId(null);
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setReplyTo(msg); setActiveReactionMsgId(null); }}
-                      className="sm:hidden bg-background border border-border rounded-full p-1.5 shadow-lg hover:bg-accent"
-                      aria-label="Reply"
-                    >
-                      <Reply className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-                <ReactionDisplay
-                  reactions={grouped}
-                  onToggle={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })}
-                  className={`mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}
-                />
-              </div>
-            </div>
+            <MessageRow
+              key={msg.id}
+              msg={msg}
+              isMine={isMine}
+              grouped={grouped}
+              showBar={showBar}
+              onActivate={() => setActiveReactionMsgId(msg.id)}
+              onDeactivate={() => setActiveReactionMsgId(prev => (prev === msg.id ? null : prev))}
+              onReply={() => setReplyTo(msg)}
+              onTouchStart={() => startLongPress(msg.id)}
+              onTouchEnd={cancelLongPress}
+              onReact={(emoji) => {
+                toggleReaction.mutate({ targetId: msg.id, emoji });
+                setActiveReactionMsgId(null);
+              }}
+              onToggleReaction={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })}
+              renderReplySnippet={renderReplySnippet}
+            />
           );
         })}
       </div>
