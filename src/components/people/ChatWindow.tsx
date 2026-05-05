@@ -434,13 +434,21 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                 </button>
                 {/* Reaction bar: hover (desktop) or long-press (mobile) */}
                 {showBar && (
-                  <div className={`absolute -top-10 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel`}>
+                  <div className={`absolute -top-10 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel flex items-center gap-1`}>
                     <ReactionBar
                       onReact={(emoji) => {
                         toggleReaction.mutate({ targetId: msg.id, emoji });
                         setActiveReactionMsgId(null);
                       }}
                     />
+                    <button
+                      type="button"
+                      onClick={() => { setReplyTo(msg); setActiveReactionMsgId(null); }}
+                      className="sm:hidden bg-background border border-border rounded-full p-1.5 shadow-lg hover:bg-accent"
+                      aria-label="Reply"
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 )}
                 <ReactionDisplay
