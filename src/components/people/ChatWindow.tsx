@@ -434,7 +434,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                 </button>
                 {/* Reaction bar: hover (desktop) or long-press (mobile) */}
                 {showBar && (
-                  <div className={`absolute -top-10 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel flex items-center gap-1`}>
+                  <div className={`absolute top-full mt-1 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel flex items-center gap-1`}>
                     <ReactionBar
                       onReact={(emoji) => {
                         toggleReaction.mutate({ targetId: msg.id, emoji });
