@@ -8,7 +8,7 @@ import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
-import ReactionPicker from '@/components/ui/reaction-picker';
+import ReactionBar from '@/components/ui/reaction-bar';
 import ReactionDisplay from '@/components/ui/reaction-display';
 import { useReactions } from '@/hooks/useReactions';
 import { toast } from '@/hooks/use-toast';
