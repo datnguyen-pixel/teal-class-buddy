@@ -387,12 +387,18 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         {messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
           const grouped = getGrouped(msg.id);
+          const showBar = activeReactionMsgId === msg.id;
           return (
             <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-[75%] group relative">
+              <div
+                className="max-w-[75%] group relative"
+                data-reaction-zone
+                onMouseLeave={() => setActiveReactionMsgId(prev => (prev === msg.id ? null : prev))}
+              >
                 <div
+                  onMouseEnter={() => setActiveReactionMsgId(msg.id)}
                   onContextMenu={(e) => { e.preventDefault(); setReplyTo(msg); }}
-                  onTouchStart={() => startLongPress(msg)}
+                  onTouchStart={() => startLongPress(msg.id)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onTouchCancel={cancelLongPress}
@@ -417,18 +423,26 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                     <span className="whitespace-pre-wrap break-words">{msg.content}</span>
                   )}
                 </div>
-                {/* Hover actions (desktop): reply + react */}
-                <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                  <button
-                    type="button"
-                    onClick={() => setReplyTo(msg)}
-                    className="bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent"
-                    aria-label="Reply"
-                  >
-                    <Reply className="w-3 h-3" />
-                  </button>
-                  <ReactionPicker onReact={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })} />
-                </div>
+                {/* Reply quick-action on hover (desktop) */}
+                <button
+                  type="button"
+                  onClick={() => setReplyTo(msg)}
+                  className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} hidden group-hover:flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent`}
+                  aria-label="Reply"
+                >
+                  <Reply className="w-3 h-3" />
+                </button>
+                {/* Reaction bar: hover (desktop) or long-press (mobile) */}
+                {showBar && (
+                  <div className={`absolute -top-10 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel`}>
+                    <ReactionBar
+                      onReact={(emoji) => {
+                        toggleReaction.mutate({ targetId: msg.id, emoji });
+                        setActiveReactionMsgId(null);
+                      }}
+                    />
+                  </div>
+                )}
                 <ReactionDisplay
                   reactions={grouped}
                   onToggle={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })}
