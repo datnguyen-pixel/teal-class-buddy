@@ -317,10 +317,10 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     setPendingImage(null);
   };
 
-  const startLongPress = (msg: ChatMessage) => {
+  const startLongPress = (msgId: string) => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setReplyTo(msg);
+      setActiveReactionMsgId(msgId);
     }, 450);
   };
   const cancelLongPress = () => {
@@ -329,6 +329,21 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       longPressTimer.current = null;
     }
   };
+
+  // Close active reaction bar (mobile) when tapping elsewhere
+  useEffect(() => {
+    if (!activeReactionMsgId) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-reaction-zone]')) setActiveReactionMsgId(null);
+    };
+    document.addEventListener('touchstart', handler, { passive: true });
+    document.addEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [activeReactionMsgId]);
 
   const renderReplySnippet = (m: ChatMessage) => {
     if (!m.reply_to_id) return null;
