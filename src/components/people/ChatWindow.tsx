@@ -8,7 +8,7 @@ import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
-import ReactionPicker from '@/components/ui/reaction-picker';
+import ReactionBar from '@/components/ui/reaction-bar';
 import ReactionDisplay from '@/components/ui/reaction-display';
 import { useReactions } from '@/hooks/useReactions';
 import { toast } from '@/hooks/use-toast';
@@ -81,6 +81,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const [pendingImage, setPendingImage] = useState<{ file: Blob; preview: string } | null>(null);
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -316,10 +317,10 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     setPendingImage(null);
   };
 
-  const startLongPress = (msg: ChatMessage) => {
+  const startLongPress = (msgId: string) => {
     if (longPressTimer.current) clearTimeout(longPressTimer.current);
     longPressTimer.current = setTimeout(() => {
-      setReplyTo(msg);
+      setActiveReactionMsgId(msgId);
     }, 450);
   };
   const cancelLongPress = () => {
@@ -328,6 +329,21 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       longPressTimer.current = null;
     }
   };
+
+  // Close active reaction bar (mobile) when tapping elsewhere
+  useEffect(() => {
+    if (!activeReactionMsgId) return;
+    const handler = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('[data-reaction-zone]')) setActiveReactionMsgId(null);
+    };
+    document.addEventListener('touchstart', handler, { passive: true });
+    document.addEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('touchstart', handler);
+      document.removeEventListener('mousedown', handler);
+    };
+  }, [activeReactionMsgId]);
 
   const renderReplySnippet = (m: ChatMessage) => {
     if (!m.reply_to_id) return null;
@@ -371,12 +387,18 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         {messages.map(msg => {
           const isMine = msg.sender_id === user?.id;
           const grouped = getGrouped(msg.id);
+          const showBar = activeReactionMsgId === msg.id;
           return (
             <div key={msg.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
-              <div className="max-w-[75%] group relative">
+              <div
+                className="max-w-[75%] group relative"
+                data-reaction-zone
+                onMouseLeave={() => setActiveReactionMsgId(prev => (prev === msg.id ? null : prev))}
+              >
                 <div
+                  onMouseEnter={() => setActiveReactionMsgId(msg.id)}
                   onContextMenu={(e) => { e.preventDefault(); setReplyTo(msg); }}
-                  onTouchStart={() => startLongPress(msg)}
+                  onTouchStart={() => startLongPress(msg.id)}
                   onTouchEnd={cancelLongPress}
                   onTouchMove={cancelLongPress}
                   onTouchCancel={cancelLongPress}
@@ -401,18 +423,34 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
                     <span className="whitespace-pre-wrap break-words">{msg.content}</span>
                   )}
                 </div>
-                {/* Hover actions (desktop): reply + react */}
-                <div className={`absolute -bottom-1 ${isMine ? 'right-0' : 'left-0'} flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity`}>
-                  <button
-                    type="button"
-                    onClick={() => setReplyTo(msg)}
-                    className="bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent"
-                    aria-label="Reply"
-                  >
-                    <Reply className="w-3 h-3" />
-                  </button>
-                  <ReactionPicker onReact={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })} />
-                </div>
+                {/* Reply quick-action on hover (desktop) */}
+                <button
+                  type="button"
+                  onClick={() => setReplyTo(msg)}
+                  className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} hidden group-hover:flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent`}
+                  aria-label="Reply"
+                >
+                  <Reply className="w-3 h-3" />
+                </button>
+                {/* Reaction bar: hover (desktop) or long-press (mobile) */}
+                {showBar && (
+                  <div className={`absolute -top-10 ${isMine ? 'right-0' : 'left-0'} z-20 animate-reaction-panel flex items-center gap-1`}>
+                    <ReactionBar
+                      onReact={(emoji) => {
+                        toggleReaction.mutate({ targetId: msg.id, emoji });
+                        setActiveReactionMsgId(null);
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setReplyTo(msg); setActiveReactionMsgId(null); }}
+                      className="sm:hidden bg-background border border-border rounded-full p-1.5 shadow-lg hover:bg-accent"
+                      aria-label="Reply"
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
                 <ReactionDisplay
                   reactions={grouped}
                   onToggle={(emoji) => toggleReaction.mutate({ targetId: msg.id, emoji })}
