@@ -21,9 +21,11 @@ interface ReactionBarProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   className?: string;
+  extraActions?: React.ReactNode;
+  extraWidth?: number;
 }
 
-const PANEL_WIDTH = 270;
+const BASE_PANEL_WIDTH = 270;
 const PANEL_HEIGHT = 40;
 
 const ReactionBar = ({
