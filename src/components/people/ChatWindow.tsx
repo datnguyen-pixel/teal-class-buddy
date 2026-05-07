@@ -530,8 +530,119 @@ const MessageRow = ({
     cancelClose();
     closeTimer.current = setTimeout(() => {
       onDeactivate();
-    }, 600);
+    }, 1500);
   };
+
+  const handleCopy = async () => {
+    const text = msg.content || (msg.image_url ? msg.image_url : '');
+    if (!text) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+      }
+      toast({ title: 'Copied' });
+    } catch {
+      toast({ title: 'Could not copy', variant: 'destructive' });
+    }
+  };
+
+  return (
+    <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className="max-w-[75%] group relative"
+        data-reaction-zone
+        onMouseEnter={cancelClose}
+        onMouseLeave={scheduleClose}
+      >
+        <div
+          ref={bubbleRef}
+          onMouseEnter={() => { cancelClose(); onActivate(); }}
+          onContextMenu={(e) => { e.preventDefault(); onActivate(); }}
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
+          onTouchMove={onTouchEnd}
+          onTouchCancel={onTouchEnd}
+          className={`px-3 py-2 rounded-2xl text-sm ${
+            isMine
+              ? 'bg-primary text-primary-foreground rounded-br-md'
+              : 'bg-muted text-foreground rounded-bl-md'
+          }`}
+        >
+          {renderReplySnippet(msg)}
+          {msg.image_url && (
+            <a href={msg.image_url} target="_blank" rel="noreferrer" className="block">
+              <img
+                src={msg.image_url}
+                alt="sent"
+                className="rounded-lg max-h-60 w-auto object-cover mb-1"
+                loading="lazy"
+              />
+            </a>
+          )}
+          {msg.content && (
+            <span className="whitespace-pre-wrap break-words select-text">{msg.content}</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onReply}
+          onMouseEnter={cancelClose}
+          className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} hidden group-hover:flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent`}
+          aria-label="Reply"
+        >
+          <Reply className="w-3 h-3" />
+        </button>
+        {showBar && (
+          <ReactionBar
+            anchorRef={bubbleRef}
+            boundaryRef={boundaryRef}
+            align={isMine ? 'right' : 'left'}
+            onReact={onReact}
+            onClose={onDeactivate}
+            onMouseEnter={cancelClose}
+            onMouseLeave={scheduleClose}
+            extraWidth={70}
+            extraActions={
+              <>
+                <div className="w-px h-5 bg-border mx-1" />
+                <button
+                  type="button"
+                  title="Reply"
+                  onClick={(e) => { e.stopPropagation(); onReply(); onDeactivate(); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
+                >
+                  <Reply className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  title="Copy"
+                  onClick={(e) => { e.stopPropagation(); handleCopy(); onDeactivate(); }}
+                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </>
+            }
+          />
+        )}
+        <ReactionDisplay
+          reactions={grouped}
+          onToggle={onToggleReaction}
+          className={`mt-1 ${isMine ? 'justify-end' : 'justify-start'}`}
+        />
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
