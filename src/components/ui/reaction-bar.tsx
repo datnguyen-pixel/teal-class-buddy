@@ -21,9 +21,11 @@ interface ReactionBarProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   className?: string;
+  extraActions?: React.ReactNode;
+  extraWidth?: number;
 }
 
-const PANEL_WIDTH = 270;
+const BASE_PANEL_WIDTH = 270;
 const PANEL_HEIGHT = 40;
 
 const ReactionBar = ({
@@ -35,9 +37,12 @@ const ReactionBar = ({
   onMouseEnter,
   onMouseLeave,
   className,
+  extraActions,
+  extraWidth = 0,
 }: ReactionBarProps) => {
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const PANEL_WIDTH = BASE_PANEL_WIDTH + extraWidth;
 
   useEffect(() => {
     const compute = () => {
@@ -67,7 +72,7 @@ const ReactionBar = ({
       window.removeEventListener('resize', compute);
       window.removeEventListener('scroll', compute, true);
     };
-  }, [anchorRef, boundaryRef, align]);
+  }, [anchorRef, boundaryRef, align, PANEL_WIDTH]);
 
   if (!pos) return null;
 
@@ -98,6 +103,7 @@ const ReactionBar = ({
           {r.emoji}
         </button>
       ))}
+      {extraActions}
     </div>,
     document.body
   );
