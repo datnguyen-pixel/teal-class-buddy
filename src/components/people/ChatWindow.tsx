@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { X, Send, Image as ImageIcon, Reply, Loader2, Copy } from 'lucide-react';
+import { X, Send, Image as ImageIcon, Reply, Loader2 } from 'lucide-react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { InfiniteData } from '@tanstack/react-query';
 import EmojiPicker from '@/components/ui/emoji-picker';
@@ -533,28 +533,6 @@ const MessageRow = ({
     }, 1500);
   };
 
-  const handleCopy = async () => {
-    const text = msg.content || (msg.image_url ? msg.image_url : '');
-    if (!text) return;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(text);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-      }
-      toast({ title: 'Copied' });
-    } catch {
-      toast({ title: 'Could not copy', variant: 'destructive' });
-    }
-  };
-
   return (
     <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -610,28 +588,6 @@ const MessageRow = ({
             onClose={onDeactivate}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            extraWidth={70}
-            extraActions={
-              <>
-                <div className="w-px h-5 bg-border mx-1" />
-                <button
-                  type="button"
-                  title="Reply"
-                  onClick={(e) => { e.stopPropagation(); onReply(); onDeactivate(); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
-                >
-                  <Reply className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  title="Copy"
-                  onClick={(e) => { e.stopPropagation(); handleCopy(); onDeactivate(); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </>
-            }
           />
         )}
         <ReactionDisplay
