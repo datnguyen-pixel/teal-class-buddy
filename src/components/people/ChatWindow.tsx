@@ -519,6 +519,8 @@ const MessageRow = ({
 }: MessageRowProps) => {
   const bubbleRef = useRef<HTMLDivElement>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const replyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [replyVisible, setReplyVisible] = useState(false);
 
   const cancelClose = () => {
     if (closeTimer.current) {
@@ -533,13 +535,37 @@ const MessageRow = ({
     }, 1500);
   };
 
+  const cancelReplyHide = () => {
+    if (replyTimer.current) {
+      clearTimeout(replyTimer.current);
+      replyTimer.current = null;
+    }
+  };
+
+  const showReply = () => {
+    cancelReplyHide();
+    setReplyVisible(true);
+  };
+
+  const scheduleReplyHide = () => {
+    cancelReplyHide();
+    replyTimer.current = setTimeout(() => {
+      setReplyVisible(false);
+    }, 1000);
+  };
+
+  useEffect(() => () => {
+    cancelClose();
+    cancelReplyHide();
+  }, []);
+
   return (
     <div className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
       <div
         className="max-w-[75%] group relative"
         data-reaction-zone
-        onMouseEnter={cancelClose}
-        onMouseLeave={scheduleClose}
+        onMouseEnter={() => { cancelClose(); showReply(); }}
+        onMouseLeave={() => { scheduleClose(); scheduleReplyHide(); }}
       >
         <div
           ref={bubbleRef}
@@ -573,8 +599,9 @@ const MessageRow = ({
         <button
           type="button"
           onClick={onReply}
-          onMouseEnter={cancelClose}
-          className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} hidden group-hover:flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent`}
+          onMouseEnter={() => { cancelClose(); showReply(); }}
+          onMouseLeave={scheduleReplyHide}
+          className={`absolute top-1/2 -translate-y-1/2 ${isMine ? '-left-7' : '-right-7'} flex items-center justify-center bg-background border border-border rounded-full p-1 shadow-sm hover:bg-accent transition-opacity duration-200 ${replyVisible ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
           aria-label="Reply"
         >
           <Reply className="w-3 h-3" />
