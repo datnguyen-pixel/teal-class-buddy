@@ -588,28 +588,6 @@ const MessageRow = ({
             onClose={onDeactivate}
             onMouseEnter={cancelClose}
             onMouseLeave={scheduleClose}
-            extraWidth={70}
-            extraActions={
-              <>
-                <div className="w-px h-5 bg-border mx-1" />
-                <button
-                  type="button"
-                  title="Reply"
-                  onClick={(e) => { e.stopPropagation(); onReply(); onDeactivate(); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
-                >
-                  <Reply className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  title="Copy"
-                  onClick={(e) => { e.stopPropagation(); handleCopy(); onDeactivate(); }}
-                  className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-muted"
-                >
-                  <Copy className="w-3.5 h-3.5" />
-                </button>
-              </>
-            }
           />
         )}
         <ReactionDisplay
