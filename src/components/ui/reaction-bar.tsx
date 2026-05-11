@@ -90,23 +90,18 @@ const ReactionBar = ({
       const width = Math.max(0, Math.min(PANEL_WIDTH, availableWidth));
       const height = Math.min(PANEL_HEIGHT, availableHeight);
 
-      const spaceAbove = rect.top - bounds.top;
-      const spaceBelow = bounds.bottom - rect.bottom;
-      const placement: 'top' | 'bottom' =
-        spaceAbove >= PANEL_HEIGHT + ANCHOR_OFFSET || spaceAbove >= spaceBelow ? 'top' : 'bottom';
-
-      const preferredTop = placement === 'top'
-        ? rect.top - height - ANCHOR_OFFSET
-        : rect.bottom + ANCHOR_OFFSET;
-      const top = clamp(preferredTop, bounds.top, bounds.bottom - height);
+      // Simplified: always center horizontally inside the chat container.
+      const left = bounds.left + (availableWidth - width) / 2;
 
       const isTouch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
-      const preferredLeft = isTouch
-        ? bounds.left + (availableWidth - width) / 2
-        : align === 'right'
-          ? rect.right - width
-          : rect.left;
-      const left = clamp(preferredLeft, bounds.left, bounds.right - width);
+      // Vertical placement: prefer floating just above the message, but always
+      // clamped fully inside the chat container. On touch (mobile), center
+      // vertically inside the chat for a stable, modal-like feel.
+      const preferredTop = isTouch
+        ? bounds.top + (availableHeight - height) / 2
+        : rect.top - height - ANCHOR_OFFSET;
+      const top = clamp(preferredTop, bounds.top, bounds.bottom - height);
+      const placement: 'top' | 'bottom' = 'top';
 
       setPos({ top, left, width, placement });
     };
