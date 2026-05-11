@@ -101,7 +101,6 @@ const ReactionBar = ({
       const top = clamp(preferredTop, bounds.top, bounds.bottom - height);
 
       const isTouch = window.matchMedia('(pointer: coarse)').matches;
-      const anchorCenter = rect.left + rect.width / 2;
       const preferredLeft = isTouch
         ? bounds.left + (availableWidth - width) / 2
         : align === 'right'
@@ -144,7 +143,7 @@ const ReactionBar = ({
       data-reaction-zone
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, width: PANEL_WIDTH }}
+      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, width: pos.width }}
       className={cn(
         'flex items-center gap-0.5 bg-background border border-border rounded-full px-1.5 py-1 shadow-xl animate-reaction-panel',
         className
@@ -165,7 +164,6 @@ const ReactionBar = ({
           {r.emoji}
         </button>
       ))}
-      {extraActions}
     </div>,
     document.body
   );
