@@ -100,7 +100,7 @@ const ReactionBar = ({
         : rect.bottom + ANCHOR_OFFSET;
       const top = clamp(preferredTop, bounds.top, bounds.bottom - height);
 
-      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      const isTouch = window.matchMedia?.('(pointer: coarse)').matches ?? false;
       const preferredLeft = isTouch
         ? bounds.left + (availableWidth - width) / 2
         : align === 'right'
@@ -117,9 +117,9 @@ const ReactionBar = ({
     };
 
     scheduleCompute();
-    const observer = new ResizeObserver(scheduleCompute);
-    if (anchorRef.current) observer.observe(anchorRef.current);
-    if (boundaryRef?.current) observer.observe(boundaryRef.current);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleCompute) : null;
+    if (anchorRef.current) observer?.observe(anchorRef.current);
+    if (boundaryRef?.current) observer?.observe(boundaryRef.current);
 
     window.addEventListener('resize', scheduleCompute);
     window.addEventListener('scroll', scheduleCompute, true);
@@ -127,7 +127,7 @@ const ReactionBar = ({
     window.visualViewport?.addEventListener('scroll', scheduleCompute);
     return () => {
       cancelAnimationFrame(frame);
-      observer.disconnect();
+      observer?.disconnect();
       window.removeEventListener('resize', scheduleCompute);
       window.removeEventListener('scroll', scheduleCompute, true);
       window.visualViewport?.removeEventListener('resize', scheduleCompute);
