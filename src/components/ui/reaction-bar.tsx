@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
@@ -21,12 +21,44 @@ interface ReactionBarProps {
   onMouseEnter?: () => void;
   onMouseLeave?: () => void;
   className?: string;
-  extraActions?: React.ReactNode;
-  extraWidth?: number;
 }
 
-const BASE_PANEL_WIDTH = 270;
-const PANEL_HEIGHT = 40;
+const PANEL_WIDTH = 268;
+const PANEL_HEIGHT = 42;
+const SAFE_GAP = 8;
+const ANCHOR_OFFSET = 8;
+
+const clamp = (value: number, min: number, max: number) => {
+  if (max < min) return min;
+  return Math.min(Math.max(value, min), max);
+};
+
+const getSafeBoundary = (boundary?: DOMRect) => {
+  const viewport = window.visualViewport;
+  const viewportLeft = viewport?.offsetLeft ?? 0;
+  const viewportTop = viewport?.offsetTop ?? 0;
+  const viewportRight = viewportLeft + (viewport?.width ?? window.innerWidth);
+  const viewportBottom = viewportTop + (viewport?.height ?? window.innerHeight);
+
+  const safe = {
+    left: viewportLeft + SAFE_GAP,
+    top: viewportTop + SAFE_GAP,
+    right: viewportRight - SAFE_GAP,
+    bottom: viewportBottom - SAFE_GAP,
+  };
+
+  if (!boundary) return safe;
+
+  const constrained = {
+    left: Math.max(safe.left, boundary.left + SAFE_GAP),
+    top: Math.max(safe.top, boundary.top + SAFE_GAP),
+    right: Math.min(safe.right, boundary.right - SAFE_GAP),
+    bottom: Math.min(safe.bottom, boundary.bottom - SAFE_GAP),
+  };
+
+  if (constrained.right <= constrained.left || constrained.bottom <= constrained.top) return safe;
+  return constrained;
+};
 
 const ReactionBar = ({
   anchorRef,
@@ -37,42 +69,72 @@ const ReactionBar = ({
   onMouseEnter,
   onMouseLeave,
   className,
-  extraActions,
-  extraWidth = 0,
 }: ReactionBarProps) => {
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [pos, setPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    placement: 'top' | 'bottom';
+  } | null>(null);
   const panelRef = useRef<HTMLDivElement>(null);
-  const PANEL_WIDTH = BASE_PANEL_WIDTH + extraWidth;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    let frame = 0;
     const compute = () => {
       const el = anchorRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
-      const bounds = boundaryRef?.current?.getBoundingClientRect();
-      const minLeft = bounds ? bounds.left + 6 : 8;
-      const maxRight = bounds ? bounds.right - 6 : window.innerWidth - 8;
-      const minTop = bounds ? bounds.top + 6 : 8;
-      const maxBottom = bounds ? bounds.bottom - 6 : window.innerHeight - 8;
+      const bounds = getSafeBoundary(boundaryRef?.current?.getBoundingClientRect());
+      const availableWidth = bounds.right - bounds.left;
+      const availableHeight = bounds.bottom - bounds.top;
+      const width = Math.max(0, Math.min(PANEL_WIDTH, availableWidth));
+      const height = Math.min(PANEL_HEIGHT, availableHeight);
 
-      let top = rect.top - PANEL_HEIGHT - 6;
-      if (top < minTop) top = rect.bottom + 6;
-      if (top + PANEL_HEIGHT > maxBottom) top = Math.max(minTop, maxBottom - PANEL_HEIGHT);
+      const spaceAbove = rect.top - bounds.top;
+      const spaceBelow = bounds.bottom - rect.bottom;
+      const placement: 'top' | 'bottom' =
+        spaceAbove >= PANEL_HEIGHT + ANCHOR_OFFSET || spaceAbove >= spaceBelow ? 'top' : 'bottom';
 
-      let left = align === 'right' ? rect.right - PANEL_WIDTH : rect.left;
-      if (left < minLeft) left = minLeft;
-      if (left + PANEL_WIDTH > maxRight) left = maxRight - PANEL_WIDTH;
+      const preferredTop = placement === 'top'
+        ? rect.top - height - ANCHOR_OFFSET
+        : rect.bottom + ANCHOR_OFFSET;
+      const top = clamp(preferredTop, bounds.top, bounds.bottom - height);
 
-      setPos({ top, left });
+      const isTouch = window.matchMedia('(pointer: coarse)').matches;
+      const anchorCenter = rect.left + rect.width / 2;
+      const preferredLeft = isTouch
+        ? bounds.left + (availableWidth - width) / 2
+        : align === 'right'
+          ? rect.right - width
+          : rect.left;
+      const left = clamp(preferredLeft, bounds.left, bounds.right - width);
+
+      setPos({ top, left, width, placement });
     };
-    compute();
-    window.addEventListener('resize', compute);
-    window.addEventListener('scroll', compute, true);
+
+    const scheduleCompute = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(compute);
+    };
+
+    scheduleCompute();
+    const observer = new ResizeObserver(scheduleCompute);
+    if (anchorRef.current) observer.observe(anchorRef.current);
+    if (boundaryRef?.current) observer.observe(boundaryRef.current);
+
+    window.addEventListener('resize', scheduleCompute);
+    window.addEventListener('scroll', scheduleCompute, true);
+    window.visualViewport?.addEventListener('resize', scheduleCompute);
+    window.visualViewport?.addEventListener('scroll', scheduleCompute);
     return () => {
-      window.removeEventListener('resize', compute);
-      window.removeEventListener('scroll', compute, true);
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+      window.removeEventListener('resize', scheduleCompute);
+      window.removeEventListener('scroll', scheduleCompute, true);
+      window.visualViewport?.removeEventListener('resize', scheduleCompute);
+      window.visualViewport?.removeEventListener('scroll', scheduleCompute);
     };
-  }, [anchorRef, boundaryRef, align, PANEL_WIDTH]);
+  }, [anchorRef, boundaryRef, align]);
 
   if (!pos) return null;
 
