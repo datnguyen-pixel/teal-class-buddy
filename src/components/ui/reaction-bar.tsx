@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 const REACTIONS = [
-  { emoji: '👍', label: 'Like' },
-  { emoji: '❤️', label: 'Love' },
-  { emoji: '😂', label: 'Haha' },
-  { emoji: '😮', label: 'Wow' },
-  { emoji: '😢', label: 'Sad' },
   { emoji: '😡', label: 'Angry' },
+  { emoji: '😢', label: 'Sad' },
+  { emoji: '😮', label: 'Wow' },
+  { emoji: '😂', label: 'Haha' },
+  { emoji: '👍', label: 'Like' },
   { emoji: '🙌', label: 'Celebrate' },
+  { emoji: '❤️', label: 'Love' },
 ];
 
 interface ReactionBarProps {
@@ -23,7 +23,7 @@ interface ReactionBarProps {
   className?: string;
 }
 
-const PANEL_WIDTH = 268;
+const PANEL_WIDTH = 232;
 const PANEL_HEIGHT = 42;
 const SAFE_GAP = 8;
 const ANCHOR_OFFSET = 8;
@@ -138,9 +138,9 @@ const ReactionBar = ({
       data-reaction-zone
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, width: pos.width }}
+      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, maxWidth: pos.width }}
       className={cn(
-        'flex items-center gap-0.5 bg-background border border-border rounded-full px-1.5 py-1 shadow-xl animate-reaction-panel',
+        'inline-flex items-center gap-0.5 bg-background border border-border rounded-full px-1.5 py-1 shadow-xl animate-reaction-panel w-max',
         className
       )}
     >
