@@ -3,13 +3,13 @@ import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
 const REACTIONS = [
-  { emoji: '👍', label: 'Like' },
-  { emoji: '❤️', label: 'Love' },
-  { emoji: '😂', label: 'Haha' },
-  { emoji: '😮', label: 'Wow' },
-  { emoji: '😢', label: 'Sad' },
   { emoji: '😡', label: 'Angry' },
+  { emoji: '😢', label: 'Sad' },
+  { emoji: '😮', label: 'Wow' },
+  { emoji: '😂', label: 'Haha' },
+  { emoji: '👍', label: 'Like' },
   { emoji: '🙌', label: 'Celebrate' },
+  { emoji: '❤️', label: 'Love' },
 ];
 
 interface ReactionBarProps {
