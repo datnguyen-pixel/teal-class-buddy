@@ -23,7 +23,7 @@ interface ReactionBarProps {
   className?: string;
 }
 
-const PANEL_WIDTH = 268;
+const PANEL_WIDTH = 232;
 const PANEL_HEIGHT = 42;
 const SAFE_GAP = 8;
 const ANCHOR_OFFSET = 8;
