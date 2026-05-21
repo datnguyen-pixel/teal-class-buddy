@@ -138,9 +138,9 @@ const ReactionBar = ({
       data-reaction-zone
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, width: pos.width }}
+      style={{ position: 'fixed', top: pos.top, left: pos.left, zIndex: 9999, maxWidth: pos.width }}
       className={cn(
-        'flex items-center gap-0.5 bg-background border border-border rounded-full px-1.5 py-1 shadow-xl animate-reaction-panel',
+        'inline-flex items-center gap-0.5 bg-background border border-border rounded-full px-1.5 py-1 shadow-xl animate-reaction-panel w-max',
         className
       )}
     >
