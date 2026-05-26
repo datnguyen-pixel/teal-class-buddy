@@ -181,9 +181,10 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     [messages, user?.id]
   );
 
-  // Mark messages as read
+  // Mark messages as read (skip while a secret conversation is still locked,
+  // so unlocking later doesn't silently mark previously-unread messages).
   useEffect(() => {
-    if (!user) return;
+    if (!user || locked) return;
     supabase
       .from('messages')
       .update({ read: true })
@@ -192,8 +193,9 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .eq('read', false)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       });
-  }, [unreadLoadedIds, partner.user_id, user, queryClient]);
+  }, [unreadLoadedIds, partner.user_id, user, queryClient, locked]);
 
   // Realtime subscription
   useEffect(() => {
