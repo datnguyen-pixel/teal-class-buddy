@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import ChatWindow from '@/components/people/ChatWindow';
+import { secretPartnerOf } from '@/lib/secret-chat';
 
 interface UserWithRole {
   user_id: string;
