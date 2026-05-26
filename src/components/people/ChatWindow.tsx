@@ -134,7 +134,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       lastPage.length >= CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
   });
 
-  const messages = useMemo(() => {
+  const realMessages = useMemo(() => {
     const all = (messagePages?.pages || []).flat();
     const unique = new Map<string, ChatMessage>();
     all.forEach(m => unique.set(m.id, m));
@@ -142,6 +142,11 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }, [messagePages]);
+
+  const messages = useMemo(() => {
+    if (locked) return ghostMessages;
+    return realMessages;
+  }, [locked, ghostMessages, realMessages]);
 
   const addMessageToCache = useCallback((incoming: ChatMessage) => {
     queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
