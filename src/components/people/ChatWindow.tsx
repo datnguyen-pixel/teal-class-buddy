@@ -12,6 +12,12 @@ import ReactionBar from '@/components/ui/reaction-bar';
 import ReactionDisplay from '@/components/ui/reaction-display';
 import { useReactions } from '@/hooks/useReactions';
 import { toast } from '@/hooks/use-toast';
+import {
+  isSecretConversation,
+  isSecretUnlocked,
+  setSecretUnlocked,
+  SECRET_PASSPHRASE,
+} from '@/lib/secret-chat';
 
 interface ChatPartner {
   user_id: string;
