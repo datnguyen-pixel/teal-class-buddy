@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ChatWindow from './ChatWindow';
+import { secretPartnerOf } from '@/lib/secret-chat';
 
 interface UnreadSender {
   user_id: string;
@@ -24,15 +25,19 @@ const ChatBubble = () => {
     queryKey: ['unread-count'],
     queryFn: async () => {
       if (!user) return [];
+      const hiddenPartner = secretPartnerOf(user.id);
       const { data: unreadMessages } = await supabase
         .from('messages')
         .select('sender_id')
         .eq('receiver_id', user.id)
         .eq('read', false);
 
-      if (!unreadMessages || unreadMessages.length === 0) return [];
+      const filtered = (unreadMessages || []).filter(
+        m => !hiddenPartner || m.sender_id !== hiddenPartner
+      );
+      if (filtered.length === 0) return [];
 
-      const senderIds = [...new Set(unreadMessages.map(m => m.sender_id))];
+      const senderIds = [...new Set(filtered.map(m => m.sender_id))];
       const { data: profiles } = await supabase
         .from('profiles')
         .select('user_id, full_name, avatar_url')
@@ -44,7 +49,7 @@ const ChatBubble = () => {
         user_id: p.user_id,
         full_name: p.full_name,
         avatar_url: p.avatar_url,
-        count: unreadMessages.filter(m => m.sender_id === p.user_id).length,
+        count: filtered.filter(m => m.sender_id === p.user_id).length,
       })) as UnreadSender[];
     },
     refetchInterval: 5000,

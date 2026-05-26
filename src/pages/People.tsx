@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import ChatWindow from '@/components/people/ChatWindow';
+import { secretPartnerOf } from '@/lib/secret-chat';
 
 interface UserWithRole {
   user_id: string;
@@ -83,8 +84,10 @@ const People = () => {
         .eq('receiver_id', user.id)
         .eq('read', false);
       if (!data) return {};
+      const hiddenPartner = secretPartnerOf(user.id);
       const counts: Record<string, number> = {};
       data.forEach(m => {
+        if (hiddenPartner && m.sender_id === hiddenPartner) return;
         counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
       });
       return counts;

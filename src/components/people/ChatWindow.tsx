@@ -12,6 +12,12 @@ import ReactionBar from '@/components/ui/reaction-bar';
 import ReactionDisplay from '@/components/ui/reaction-display';
 import { useReactions } from '@/hooks/useReactions';
 import { toast } from '@/hooks/use-toast';
+import {
+  isSecretConversation,
+  isSecretUnlocked,
+  setSecretUnlocked,
+  SECRET_PASSPHRASE,
+} from '@/lib/secret-chat';
 
 interface ChatPartner {
   user_id: string;
@@ -82,6 +88,12 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
+  const isSecret = isSecretConversation(user?.id, partner.user_id);
+  const [unlocked, setUnlocked] = useState<boolean>(() =>
+    isSecret && user ? isSecretUnlocked(user.id, partner.user_id) : !isSecret
+  );
+  const [ghostMessages, setGhostMessages] = useState<ChatMessage[]>([]);
+  const locked = isSecret && !unlocked;
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -122,7 +134,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       lastPage.length >= CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
   });
 
-  const messages = useMemo(() => {
+  const realMessages = useMemo(() => {
     const all = (messagePages?.pages || []).flat();
     const unique = new Map<string, ChatMessage>();
     all.forEach(m => unique.set(m.id, m));
@@ -130,6 +142,11 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }, [messagePages]);
+
+  const messages = useMemo(() => {
+    if (locked) return ghostMessages;
+    return realMessages;
+  }, [locked, ghostMessages, realMessages]);
 
   const addMessageToCache = useCallback((incoming: ChatMessage) => {
     queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
@@ -164,9 +181,10 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     [messages, user?.id]
   );
 
-  // Mark messages as read
+  // Mark messages as read (skip while a secret conversation is still locked,
+  // so unlocking later doesn't silently mark previously-unread messages).
   useEffect(() => {
-    if (!user) return;
+    if (!user || locked) return;
     supabase
       .from('messages')
       .update({ read: true })
@@ -175,8 +193,9 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .eq('read', false)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       });
-  }, [unreadLoadedIds, partner.user_id, user, queryClient]);
+  }, [unreadLoadedIds, partner.user_id, user, queryClient, locked]);
 
   // Realtime subscription
   useEffect(() => {
@@ -289,6 +308,37 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     e.preventDefault();
     const trimmed = message.trim();
     if (!trimmed && !pendingImage) return;
+
+    // Hidden private conversation: intercept before touching the server.
+    if (locked && user) {
+      if (trimmed === SECRET_PASSPHRASE && !pendingImage) {
+        setSecretUnlocked(user.id, partner.user_id);
+        setUnlocked(true);
+        setGhostMessages([]);
+        setMessage('');
+        setReplyTo(null);
+        return;
+      }
+      // Treat as throwaway local-only message; never persisted, no notification.
+      const localPreview = pendingImage ? pendingImage.preview : null;
+      setGhostMessages(prev => [
+        ...prev,
+        {
+          id: `ghost-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          sender_id: user.id,
+          receiver_id: partner.user_id,
+          content: trimmed,
+          read: true,
+          created_at: new Date().toISOString(),
+          image_url: localPreview,
+          reply_to_id: null,
+        },
+      ]);
+      setMessage('');
+      setPendingImage(null);
+      setReplyTo(null);
+      return;
+    }
 
     try {
       let image_url: string | null = null;
