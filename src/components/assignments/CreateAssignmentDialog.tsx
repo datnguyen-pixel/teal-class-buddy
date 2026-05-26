@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,7 +48,16 @@ const CreateAssignmentDialog = ({ userId, editAssignment, onEditDone }: CreateAs
   const [options, setOptions] = useState<string[]>(
     editAssignment?.options && Array.isArray(editAssignment.options) ? editAssignment.options : ['', '']
   );
-  const [correctAnswer, setCorrectAnswer] = useState(editAssignment?.correct_answer || '');
+  const [correctAnswer, setCorrectAnswer] = useState('');
+
+  // Fetch correct_answer via RPC when editing an MC assignment (teachers only)
+  useEffect(() => {
+    if (isEditing && editAssignment?.type === 'multiple_choice' && editAssignment.id) {
+      supabase
+        .rpc('get_assignment_correct_answer', { _assignment_id: editAssignment.id })
+        .then(({ data }) => { if (typeof data === 'string') setCorrectAnswer(data); });
+    }
+  }, [isEditing, editAssignment?.id, editAssignment?.type]);
 
   const resetForm = () => {
     setType('essay');
