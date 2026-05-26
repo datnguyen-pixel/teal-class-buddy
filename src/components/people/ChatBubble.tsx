@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import ChatWindow from './ChatWindow';
+import { secretPartnerOf } from '@/lib/secret-chat';
 
 interface UnreadSender {
   user_id: string;
