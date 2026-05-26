@@ -309,6 +309,37 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     const trimmed = message.trim();
     if (!trimmed && !pendingImage) return;
 
+    // Hidden private conversation: intercept before touching the server.
+    if (locked && user) {
+      if (trimmed === SECRET_PASSPHRASE && !pendingImage) {
+        setSecretUnlocked(user.id, partner.user_id);
+        setUnlocked(true);
+        setGhostMessages([]);
+        setMessage('');
+        setReplyTo(null);
+        return;
+      }
+      // Treat as throwaway local-only message; never persisted, no notification.
+      const localPreview = pendingImage ? pendingImage.preview : null;
+      setGhostMessages(prev => [
+        ...prev,
+        {
+          id: `ghost-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          sender_id: user.id,
+          receiver_id: partner.user_id,
+          content: trimmed,
+          read: true,
+          created_at: new Date().toISOString(),
+          image_url: localPreview,
+          reply_to_id: null,
+        },
+      ]);
+      setMessage('');
+      setPendingImage(null);
+      setReplyTo(null);
+      return;
+    }
+
     try {
       let image_url: string | null = null;
       if (pendingImage) {
