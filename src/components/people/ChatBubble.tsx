@@ -49,7 +49,7 @@ const ChatBubble = () => {
         user_id: p.user_id,
         full_name: p.full_name,
         avatar_url: p.avatar_url,
-        count: unreadMessages.filter(m => m.sender_id === p.user_id).length,
+        count: filtered.filter(m => m.sender_id === p.user_id).length,
       })) as UnreadSender[];
     },
     refetchInterval: 5000,
