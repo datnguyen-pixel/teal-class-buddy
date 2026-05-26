@@ -84,17 +84,12 @@ const Assignments = () => {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  // MC submission with auto-grading
+  // MC submission with server-side auto-grading
   const submitMcMutation = useMutation({
-    mutationFn: async ({ assignmentId, answer, correctAnswer }: { assignmentId: string; answer: string; correctAnswer: string }) => {
-      const isCorrect = answer === correctAnswer;
-      const { error } = await supabase.from('submissions').insert({
-        assignment_id: assignmentId,
-        student_id: user!.id,
-        content: answer,
-        grade: isCorrect ? 100 : 0,
-        feedback: isCorrect ? 'Correct!' : `Incorrect. The correct answer is: ${correctAnswer}`,
-        graded_at: new Date().toISOString(),
+    mutationFn: async ({ assignmentId, answer }: { assignmentId: string; answer: string }) => {
+      const { error } = await supabase.rpc('grade_mc_submission', {
+        _assignment_id: assignmentId,
+        _answer: answer,
       });
       if (error) throw error;
     },
@@ -259,7 +254,7 @@ const Assignments = () => {
                                       ))}
                                     </div>
                                     <Button
-                                      onClick={() => submitMcMutation.mutate({ assignmentId: assignment.id, answer: selectedMcAnswer, correctAnswer: assignment.correct_answer || '' })}
+                                      onClick={() => submitMcMutation.mutate({ assignmentId: assignment.id, answer: selectedMcAnswer })}
                                       className="w-full gradient-primary border-0"
                                       disabled={!selectedMcAnswer || submitMcMutation.isPending}
                                     >

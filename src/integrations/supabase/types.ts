@@ -505,12 +505,29 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      has_role: {
-        Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
+      get_assignment_correct_answer: {
+        Args: { _assignment_id: string }
+        Returns: string
+      }
+      grade_mc_submission: {
+        Args: { _answer: string; _assignment_id: string }
+        Returns: {
+          assignment_id: string
+          content: string
+          feedback: string | null
+          file_url: string | null
+          grade: number | null
+          graded_at: string | null
+          id: string
+          student_id: string
+          submitted_at: string
         }
-        Returns: boolean
+        SetofOptions: {
+          from: "*"
+          to: "submissions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
