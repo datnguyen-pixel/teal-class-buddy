@@ -88,6 +88,12 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
   const [uploading, setUploading] = useState(false);
   const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
   const [activeReactionMsgId, setActiveReactionMsgId] = useState<string | null>(null);
+  const isSecret = isSecretConversation(user?.id, partner.user_id);
+  const [unlocked, setUnlocked] = useState<boolean>(() =>
+    isSecret && user ? isSecretUnlocked(user.id, partner.user_id) : !isSecret
+  );
+  const [ghostMessages, setGhostMessages] = useState<ChatMessage[]>([]);
+  const locked = isSecret && !unlocked;
   const queryClient = useQueryClient();
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
