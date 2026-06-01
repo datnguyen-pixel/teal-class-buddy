@@ -16,6 +16,8 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const queryClient = useQueryClient();
+
   const { data: unreadChatCount = 0 } = useQuery({
     queryKey: ['unread-chat-total'],
     queryFn: async () => {
@@ -29,8 +31,25 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
       return count || 0;
     },
     enabled: !!user,
-    refetchInterval: 5000,
+    staleTime: 30_000,
   });
+
+  // Realtime invalidation replaces aggressive polling
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`sidebar-unread-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'messages',
+        filter: `receiver_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
