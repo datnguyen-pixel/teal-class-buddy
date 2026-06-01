@@ -14,6 +14,7 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const isActive = location.pathname === '/notifications';
 
   const { data: unreadCount = 0 } = useQuery({
@@ -29,8 +30,25 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
       return count || 0;
     },
     enabled: !!user,
-    refetchInterval: 10000,
+    staleTime: 60_000,
   });
+
+  // Realtime invalidation replaces polling
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`notif-bell-${user.id}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count'] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, queryClient]);
 
   return (
     <button
