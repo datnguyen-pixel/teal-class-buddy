@@ -98,11 +98,12 @@ const People = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel('people-unread')
+      .channel(`people-unread-${user.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
         table: 'messages',
+        filter: `receiver_id=eq.${user.id}`,
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       })
