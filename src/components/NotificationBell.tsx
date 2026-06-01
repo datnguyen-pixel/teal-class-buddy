@@ -1,9 +1,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useEffect } from 'react';
 
 interface NotificationBellProps {
   onNavigate?: () => void;
