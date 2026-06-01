@@ -60,16 +60,15 @@ const ChatBubble = () => {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel('chat-bubble-notifications')
+      .channel(`chat-bubble-${user.id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-      }, (payload) => {
-        const msg = payload.new as any;
-        if (msg.receiver_id === user.id) {
-          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
-        }
+        filter: `receiver_id=eq.${user.id}`,
+      }, () => {
+        queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
       })
       .subscribe();
 
