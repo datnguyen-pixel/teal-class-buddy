@@ -52,7 +52,8 @@ const ChatBubble = () => {
         count: filtered.filter(m => m.sender_id === p.user_id).length,
       })) as UnreadSender[];
     },
-    refetchInterval: 5000,
+    enabled: !!user,
+    staleTime: 30_000,
   });
 
   // Realtime for new messages
