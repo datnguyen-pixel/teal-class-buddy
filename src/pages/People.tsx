@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge';
 import { MessageCircle, Search, ShieldX } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -93,23 +92,6 @@ const People = () => {
       return counts;
     },
   });
-
-  // Realtime: refresh unread counts on new messages
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`people-unread-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, queryClient]);
 
   const blockMutation = useMutation({
     mutationFn: async (userId: string) => {

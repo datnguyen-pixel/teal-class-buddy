@@ -3,9 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, BookOpen, ClipboardList, User, LogOut, GraduationCap, Brain, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NotificationBell from '@/components/NotificationBell';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 
 interface AppSidebarProps {
   onNavigate?: () => void;
@@ -16,10 +15,8 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const queryClient = useQueryClient();
-
   const { data: unreadChatCount = 0 } = useQuery({
-    queryKey: ['unread-chat-total'],
+    queryKey: ['unread-chat-total', user?.id],
     queryFn: async () => {
       if (!user) return 0;
       const { count, error } = await supabase
@@ -33,23 +30,6 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
     enabled: !!user,
     staleTime: 30_000,
   });
-
-  // Realtime invalidation replaces aggressive polling
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase
-      .channel(`sidebar-unread-${user.id}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, queryClient]);
 
   const navItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },

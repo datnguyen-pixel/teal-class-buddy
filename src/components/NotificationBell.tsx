@@ -18,7 +18,7 @@ const NotificationBell = ({ onNavigate }: NotificationBellProps) => {
   const isActive = location.pathname === '/notifications';
 
   const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['notifications-unread-count'],
+    queryKey: ['notifications-unread-count', user?.id],
     queryFn: async () => {
       if (!user) return 0;
       const { count, error } = await supabase

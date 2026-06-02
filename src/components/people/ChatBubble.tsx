@@ -22,7 +22,7 @@ const ChatBubble = () => {
   const dragOffset = useRef({ x: 0, y: 0 });
 
   const { data: unreadSenders = [] } = useQuery({
-    queryKey: ['unread-count'],
+    queryKey: ['unread-count', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const hiddenPartner = secretPartnerOf(user.id);
@@ -69,6 +69,7 @@ const ChatBubble = () => {
       }, () => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
         queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       })
       .subscribe();
 

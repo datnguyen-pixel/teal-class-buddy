@@ -107,7 +107,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: ['chat-messages', partner.user_id],
+    queryKey: ['chat-messages', user?.id, partner.user_id],
     initialPageParam: null as string | null,
     queryFn: async ({ pageParam }) => {
       let query = supabase
@@ -132,6 +132,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
     },
     getNextPageParam: (lastPage) =>
       lastPage.length >= CHAT_PAGE_SIZE ? lastPage[0]?.created_at ?? null : null,
+    enabled: !!user,
   });
 
   const realMessages = useMemo(() => {
@@ -150,7 +151,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
 
   const addMessageToCache = useCallback((incoming: ChatMessage) => {
     queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
-      ['chat-messages', partner.user_id],
+      ['chat-messages', user?.id, partner.user_id],
       (current) => {
         if (!current || current.pages.some(page => page.some(m => m.id === incoming.id))) return current;
         return {
@@ -165,7 +166,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         };
       }
     );
-  }, [partner.user_id, queryClient]);
+  }, [partner.user_id, queryClient, user?.id]);
 
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
@@ -193,18 +194,21 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .eq('read', false)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
         queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       });
   }, [unreadLoadedIds, partner.user_id, user, queryClient, locked]);
 
   // Realtime subscription
   useEffect(() => {
+    if (!user) return;
     const channel = supabase
-      .channel(`chat-${partner.user_id}`)
+      .channel(`chat-${user.id}-${partner.user_id}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
+        filter: `receiver_id=eq.${user.id}`,
       }, (payload) => {
         const msg = payload.new as any;
         if (
@@ -218,7 +222,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [addMessageToCache, partner.user_id, user?.id, queryClient]);
+  }, [addMessageToCache, partner.user_id, user, queryClient]);
 
   const loadOlderMessages = useCallback(() => {
     if (!scrollRef.current || !hasNextPage || isFetchingNextPage) return;
