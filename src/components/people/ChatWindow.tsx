@@ -151,7 +151,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
 
   const addMessageToCache = useCallback((incoming: ChatMessage) => {
     queryClient.setQueryData<InfiniteData<ChatMessage[], string | null>>(
-      ['chat-messages', partner.user_id],
+      ['chat-messages', user?.id, partner.user_id],
       (current) => {
         if (!current || current.pages.some(page => page.some(m => m.id === incoming.id))) return current;
         return {
@@ -166,7 +166,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
         };
       }
     );
-  }, [partner.user_id, queryClient]);
+  }, [partner.user_id, queryClient, user?.id]);
 
   const messagesById = useMemo(() => {
     const map = new Map<string, ChatMessage>();
@@ -194,6 +194,7 @@ const ChatWindow = ({ partner, onClose }: ChatWindowProps) => {
       .eq('read', false)
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
         queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
       });
   }, [unreadLoadedIds, partner.user_id, user, queryClient, locked]);
