@@ -16,7 +16,7 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const location = useLocation();
 
   const { data: unreadChatCount = 0 } = useQuery({
-    queryKey: ['unread-chat-total', user?.id],
+    queryKey: ['unread-chat-total'],
     queryFn: async () => {
       if (!user) return 0;
       const { count, error } = await supabase
@@ -28,7 +28,7 @@ const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
       return count || 0;
     },
     enabled: !!user,
-    staleTime: 30_000,
+    refetchInterval: 5000,
   });
 
   const navItems = [

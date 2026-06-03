@@ -22,7 +22,7 @@ const ChatBubble = () => {
   const dragOffset = useRef({ x: 0, y: 0 });
 
   const { data: unreadSenders = [] } = useQuery({
-    queryKey: ['unread-count', user?.id],
+    queryKey: ['unread-count'],
     queryFn: async () => {
       if (!user) return [];
       const hiddenPartner = secretPartnerOf(user.id);
@@ -52,24 +52,23 @@ const ChatBubble = () => {
         count: filtered.filter(m => m.sender_id === p.user_id).length,
       })) as UnreadSender[];
     },
-    enabled: !!user,
-    staleTime: 30_000,
+    refetchInterval: 5000,
   });
 
   // Realtime for new messages
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`chat-bubble-${user.id}`)
+      .channel('chat-bubble-notifications')
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
-        filter: `receiver_id=eq.${user.id}`,
-      }, () => {
-        queryClient.invalidateQueries({ queryKey: ['unread-count'] });
-        queryClient.invalidateQueries({ queryKey: ['unread-chat-total'] });
-        queryClient.invalidateQueries({ queryKey: ['unread-per-sender'] });
+      }, (payload) => {
+        const msg = payload.new as any;
+        if (msg.receiver_id === user.id) {
+          queryClient.invalidateQueries({ queryKey: ['unread-count'] });
+        }
       })
       .subscribe();
 

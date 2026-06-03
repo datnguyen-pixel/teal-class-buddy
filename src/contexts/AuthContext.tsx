@@ -29,118 +29,65 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [blockedMessage, setBlockedMessage] = useState<string | null>(null);
 
   const fetchUserProfile = async (supabaseUser: SupabaseUser): Promise<UserProfile | null> => {
-    try {
-      // Check if user is blocked
-      const { data: blocked } = await supabase
-        .from('blocked_users')
-        .select('id')
-        .eq('user_id', supabaseUser.id)
-        .maybeSingle();
+    // Check if user is blocked
+    const { data: blocked } = await supabase
+      .from('blocked_users')
+      .select('id')
+      .eq('user_id', supabaseUser.id)
+      .maybeSingle();
 
-      if (blocked) {
-        // Defer signOut to avoid recursive auth-event deadlock inside listener
-        setTimeout(() => { supabase.auth.signOut(); }, 0);
-        setBlockedMessage('You have been removed from this application. Please contact the administrator for support.');
-        return null;
-      }
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', supabaseUser.id)
-        .maybeSingle();
-
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', supabaseUser.id);
-
-      const role = roles?.some(r => r.role === 'teacher') ? 'teacher' : 'student';
-
-      return {
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: profile?.full_name || supabaseUser.email || '',
-        avatarUrl: profile?.avatar_url || null,
-        role,
-      };
-    } catch (err) {
-      console.error('fetchUserProfile failed:', err);
-      // Fallback minimal profile so the app does not hang on a query error
-      return {
-        id: supabaseUser.id,
-        email: supabaseUser.email || '',
-        fullName: supabaseUser.email || '',
-        avatarUrl: null,
-        role: 'student',
-      };
+    if (blocked) {
+      await supabase.auth.signOut();
+      setBlockedMessage('You have been removed from this application. Please contact the administrator for support.');
+      return null;
     }
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', supabaseUser.id)
+      .single();
+
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', supabaseUser.id);
+
+    const role = roles?.some(r => r.role === 'teacher') ? 'teacher' : 'student';
+
+    return {
+      id: supabaseUser.id,
+      email: supabaseUser.email || '',
+      fullName: profile?.full_name || supabaseUser.email || '',
+      avatarUrl: profile?.avatar_url || null,
+      role,
+    };
   };
 
   useEffect(() => {
-    let mounted = true;
-
-    const purgeStaleAuthStorage = () => {
-      try {
-        const keys: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const k = localStorage.key(i);
-          if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) keys.push(k);
-        }
-        keys.forEach((k) => localStorage.removeItem(k));
-      } catch (e) {
-        console.warn('Failed to purge stale auth storage', e);
-      }
-    };
-
-    // onAuthStateChange fires INITIAL_SESSION on subscribe, so it also handles the initial load.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Detect a failed refresh: token refresh event with no session => stale/corrupt token
-      if (event === 'TOKEN_REFRESHED' && !session) {
-        purgeStaleAuthStorage();
-        if (!mounted) return;
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
-        // Defer async work to avoid deadlocks inside the auth listener
+        // Use setTimeout to avoid potential deadlocks with Supabase auth
         setTimeout(async () => {
           const profile = await fetchUserProfile(session.user);
-          if (!mounted) return;
           setUser(profile);
           setLoading(false);
         }, 0);
       } else {
-        if (!mounted) return;
         setUser(null);
         setLoading(false);
       }
     });
 
-    // On first load, if getSession fails with a retryable fetch error (stale token),
-    // proactively purge so the Supabase client stops retrying every 20s.
-    supabase.auth.getSession().catch((err: any) => {
-      if (err?.name === 'AuthRetryableFetchError' || /Failed to fetch/i.test(err?.message || '')) {
-        purgeStaleAuthStorage();
-        if (mounted) {
-          setUser(null);
-          setLoading(false);
-        }
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user);
+        setUser(profile);
       }
+      setLoading(false);
     });
 
-    // Safety net: if no auth event resolves within 8s, stop showing the loading screen
-    const safety = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 8000);
-
-    return () => {
-      mounted = false;
-      clearTimeout(safety);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {

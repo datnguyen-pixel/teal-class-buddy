@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,10 +16,11 @@ const Login = () => {
   const { signInWithEmail, signInWithGoogle, user, blockedMessage } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect if already logged in (in effect to avoid render-time navigation races)
-  useEffect(() => {
-    if (user) navigate('/dashboard', { replace: true });
-  }, [user, navigate]);
+  // Redirect if already logged in
+  if (user) {
+    navigate('/dashboard', { replace: true });
+    return null;
+  }
 
   const handleTeacherLogin = async (e: React.FormEvent) => {
     e.preventDefault();
