@@ -80,8 +80,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    const purgeStaleAuthStorage = () => {
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) keys.push(k);
+        }
+        keys.forEach((k) => localStorage.removeItem(k));
+      } catch (e) {
+        console.warn('Failed to purge stale auth storage', e);
+      }
+    };
+
     // onAuthStateChange fires INITIAL_SESSION on subscribe, so it also handles the initial load.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Detect a failed refresh: token refresh event with no session => stale/corrupt token
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        purgeStaleAuthStorage();
+        if (!mounted) return;
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       if (session?.user) {
         // Defer async work to avoid deadlocks inside the auth listener
         setTimeout(async () => {
@@ -94,6 +116,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!mounted) return;
         setUser(null);
         setLoading(false);
+      }
+    });
+
+    // On first load, if getSession fails with a retryable fetch error (stale token),
+    // proactively purge so the Supabase client stops retrying every 20s.
+    supabase.auth.getSession().catch((err: any) => {
+      if (err?.name === 'AuthRetryableFetchError' || /Failed to fetch/i.test(err?.message || '')) {
+        purgeStaleAuthStorage();
+        if (mounted) {
+          setUser(null);
+          setLoading(false);
+        }
       }
     });
 
